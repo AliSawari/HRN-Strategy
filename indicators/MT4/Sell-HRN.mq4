@@ -118,7 +118,7 @@ int OnCalculate(const int rates_total,
          && iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2) < iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+3)
          && iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+2) < iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+3)
          
-         // cnadlestick patterns for HRN
+         // candlestick patterns for HRN
          && Open[3+i] < Close[3+i]
          && Open[2+i] < Close[2+i]
          && Open[3+i] < Open[2+i]
