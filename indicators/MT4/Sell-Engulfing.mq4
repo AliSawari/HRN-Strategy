@@ -122,6 +122,9 @@ int OnCalculate(const int rates_total,
         // last bullish candle should close below MA 20
         && Close[1+i] <= iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1)
 
+        && (MathMin(Open[1+i], Close[1+i]) - Low[1+i]) < MathAbs(Open[1+i] - Close[1+i]) //Candlestick Lower Wick <= Candlestick Body
+        && (MathMin(Open[2+i], Close[2+i]) - Low[2+i]) < MathAbs(Open[2+i] - Close[2+i]) //Candlestick Lower Wick <= Candlestick Body
+
 
         // RSI above 30
          && iRSI(NULL, PERIOD_CURRENT, 14, PRICE_CLOSE, 1+i) > 30

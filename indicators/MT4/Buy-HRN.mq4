@@ -131,6 +131,10 @@ int OnCalculate(const int rates_total,
          
          // last bullish candle should close above MA 20
          && Close[1+i] >= iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1)
+
+         // last 2 candles should not have upper shadows bigger than the body
+        && (High[1+i] - MathMax(Open[1+i], Close[1+i]) ) < MathAbs(Open[1+i] - Close[1+i])
+        && (High[2+i] - MathMax(Open[2+i], Close[2+i]) ) < MathAbs(Open[2+i] - Close[2+i])
          
          // RSI below 70
          && iRSI(NULL, PERIOD_CURRENT, 14, PRICE_CLOSE, 1+i) < 70
