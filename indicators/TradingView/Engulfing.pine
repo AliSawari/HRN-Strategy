@@ -62,6 +62,7 @@ bgcolor(ta.highest(C_EngulfingBearish?1:0, C_EngulfingBearishNumberOfCandles)!=0
 
 
 alertcondition(C_EngulfingBullish, title = "New pattern detected", message = "New Engulfing – Bullish pattern detected")
+
 if C_EngulfingBullish
     var ttBearishEngulfing = "Bullish Engulfing"
     label.new(bar_index, patternLabelPosLow, text="BE", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBearishEngulfing)
