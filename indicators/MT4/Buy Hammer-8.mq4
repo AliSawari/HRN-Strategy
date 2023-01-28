@@ -118,7 +118,7 @@ int OnCalculate(const int rates_total,
       
         && Open[2+i] > Close[2+i] //Candlestick Open > Candlestick Close
         && (High[1+i] - MathMax(Open[1+i], Close[1+i]) ) <= MathAbs(Open[1+i] - Close[1+i]) //Candlestick Upper Wick <= Candlestick Body
-        && ( MathMin(Open[1+i], Close[1+i]) - Low[1+i] ) >= 3 * MathAbs(Open[1+i] - Close[1+i]) //Candlestick Lower Wick >= Candlestick Body
+        && ( MathMin(Open[1+i], Close[1+i]) - Low[1+i] ) >= 3 * MathAbs(Open[1+i] - Close[1+i]) //Candlestick Lower Wick >= 3 * Candlestick Body
 
         // last bullish candle's highest body point should close above MA8
         && MathMax(Open[1+i], Close[1+i]) > MA8_1
