@@ -3,16 +3,16 @@
 //@version=5
 indicator("2C-MA20", shorttitle = "2C Pattern MA20", overlay=true)
 
-// ma 
+// MA 
 ma20 = ta.sma(close, 20)
 ma50 = ta.sma(close, 50)
 ma200 = ta.sma(close, 200)
 rsi = ta.rsi(close, 14)
-// ma for the prev candle
+// MA for the prev candle
 ma20_1 = ta.sma(close[1], 20)
 ma50_1 = ta.sma(close[1], 50)
 ma200_1 = ta.sma(close[1], 200)
-// ma for pullback approximation
+// MA for pullback approximation
 ma18 = ta.sma(close, 18)
 ma18_1 = ta.sma(close[1], 18)
 
@@ -22,6 +22,9 @@ isDownTrend = (ma20 < ma50) and (ma50 < ma200) and (ma20_1 < ma50_1) and (ma50_1
 
 // MAs increasing in value
 isMAsIncreasing = ma20 > ma20_1 and ma50 > ma50_1
+// MAs decreasing in value
+isMAsDecreasing = ma20 < ma20_1 and ma50 < ma50_1
+
 
 // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
 isHitting1 = (ma20 <= high and ma20 >= low) or (ma18 <= high and ma18 >= low)
@@ -33,17 +36,30 @@ isPrevBear = open[1] > close[1]
 isCurrentBull = open < close
 isHigherClose = close > math.max(open[1], close[1])
 isHigherShadow = high > high[1]
-body2 = math.abs(open[1] - close[1])
-body1 = math.abs(close - open)
-shadowLen2 = high[1] - math.max(open[1], close[1])
-shadowLen1 = high - math.max(open, close)
-isUpperShadowsSmallerThanBodies = shadowLen2 < body2 and shadowLen1 < body1
+body1B = math.abs(close - open)
+body2B = math.abs(open[1] - close[1])
+upperShadow1 = high - math.max(open, close)
+upperShadow2 = high[1] - math.max(open[1], close[1])
+isUpperShadowsSmallerThanBodies = upperShadow1 < body1B and upperShadow2 < body2B
 isCloseAbove20 = close > ma20
 is2CBuy = isPrevBear and isCurrentBull and isHigherClose and isUpperShadowsSmallerThanBodies and isCloseAbove20
 
+// is 2 Candle pattern Sell
+isPrevBull = open[1] < close[1]  
+isCurrentBear = open > close
+isLowerClose = close < math.min(open[1], close[1])
+isLowerShadow = low < low[1]
+body1S = math.abs(close - open)
+body2S = math.abs(open[1] - close[1])
+belowShadow1 = math.min(open, close) - low
+belowShadow2 = math.min(open[1], close[1]) - low[1]
+isBelowShadowsSmallerThanBodies = belowShadow1 < body1S and belowShadow2 < body2S
+isCloseBelow20 = close < ma20
+is2CSell = isPrevBull and isCurrentBear and isLowerClose and isBelowShadowsSmallerThanBodies and isCloseBelow20
+
 // final conditions
 conditionUptrend = isUpTrend and isMAsIncreasing and isHitting and is2CBuy
-condditionDowntrend = isDownTrend
+conditionDowntrend = isDownTrend and isMAsDecreasing and isHitting and is2CSell
 
 // styling
 labelPositionBuy = low - (ta.atr(30) * 0.6)
@@ -55,6 +71,9 @@ labelColorBuy = input(color.blue, "Label Color Bullish")
 // main
 if conditionUptrend
     label.new(bar_index, labelPositionBuy, text="2C-20 B", style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = "2C-MA20 Buy")
+else if conditionDowntrend
+    label.new(bar_index, LabelPositionSell, text="2C-20 S", style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = "2C-MA20 Sell")
 
 // alerts 
-alertcondition(conditionUptrend, title = "New pattern detected", message = "New 2C Pattern on MA20 Detected ")
+alertcondition(conditionUptrend, title = "Buy 2C-MA20", message = "Buy 2C Pattern on MA20")
+alertcondition(conditionDowntrend, title = "Sell 2C-MA20", message = "Sell 2C Pattern on MA20")
