@@ -96,31 +96,35 @@ int OnCalculate(const int rates_total,
       limit++;
    
    //--- main loop
-   for(int i = limit-1; i >= 0; i--)
-     {
+   for(int i = limit-1; i >= 0; i--) {
       if (i >= MathMin(5000-1, rates_total-1-50)) continue; //omit some old rates to prevent "Array out of range" or slow calculation   
-      
+      float MA8_1 = iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+1);
+      float MA8_2 = iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+2);
+      float MA20_1 = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1);
+      float MA20_2 = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2);
+      float MA50_1 = iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+1);
+      float MA50_2 = iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+2);
       //Indicator Buffer 1
       if(   
         // MA comparison in all 2 candles      
-        iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+1) > iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1)
-         && iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1) > iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+1)
-         && iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+2) > iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2)
-         && iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2) > iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+2)
+         MA8_1 > MA20_1
+         && MA20_1 > MA50_1
+         && MA8_2 > MA20_2
+         && MA20_2 > MA50_2
          // MA increasing in all 2 candles
-         && iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+1) > iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+2)
-         && iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1) > iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2)
-         && iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+1) > iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+2)
+         && MA8_1 > MA8_2
+         && MA20_1 > MA20_2
+         && MA50_1 > MA50_2
       
         && Open[2+i] > Close[2+i] //Candlestick Open > Candlestick Close
         && (High[1+i] - MathMax(Open[1+i], Close[1+i]) ) <= MathAbs(Open[1+i] - Close[1+i]) //Candlestick Upper Wick <= Candlestick Body
         && ( MathMin(Open[1+i], Close[1+i]) - Low[1+i] ) >= 3 * MathAbs(Open[1+i] - Close[1+i]) //Candlestick Lower Wick >= Candlestick Body
 
         // last bullish candle's highest body point should close above MA8
-        && MathMax(Open[1+i], Close[1+i]) > iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, i+1)
+        && MathMax(Open[1+i], Close[1+i]) > MA8_1
         
         // Hammer's Lower Shadow should be at least 60% below MA8
-        && Low[1+i] + 0.6 * (MathMin(Open[1+i], Close[1+i]) - Low[1+i]) <= iMA(NULL, PERIOD_CURRENT, 8, 0, MODE_SMA, PRICE_CLOSE, 1+i)
+        && Low[1+i] + 0.6 * (MathMin(Open[1+i], Close[1+i]) - MA8_1
 
         // RSI below 70
          && iRSI(NULL, PERIOD_CURRENT, 14, PRICE_CLOSE, 1+i) < 70
