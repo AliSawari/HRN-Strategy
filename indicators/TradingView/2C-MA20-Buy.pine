@@ -1,3 +1,5 @@
+// Author: @AliSawari 2023
+
 //@version=5
 indicator("2C-MA20", shorttitle = "2C Pattern MA20", overlay=true)
 
