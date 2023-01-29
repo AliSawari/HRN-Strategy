@@ -58,7 +58,9 @@ alertcondition(C_EngulfingBearish, title = "New pattern detected", message = "Ne
 if C_EngulfingBearish
     var ttBearishEngulfing = "Bearish Engulfing"
     label.new(bar_index, patternLabelPosHigh, text="BE", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishEngulfing)
-bgcolor(ta.highest(C_EngulfingBearish?1:0, C_EngulfingBearishNumberOfCandles)!=0 ? color.new(color.red, 90) : na, offset=-(C_EngulfingBearishNumberOfCandles-1))
+
+
+bgcolor(ta.highest (C_EngulfingBearish?1:0, C_EngulfingBearishNumberOfCandles) !=0 ? color.new(color.red, 90) : na, offset=-(C_EngulfingBearishNumberOfCandles-1))
 
 
 alertcondition(C_EngulfingBullish, title = "New pattern detected", message = "New Engulfing – Bullish pattern detected")
@@ -66,4 +68,5 @@ alertcondition(C_EngulfingBullish, title = "New pattern detected", message = "Ne
 if C_EngulfingBullish
     var ttBearishEngulfing = "Bullish Engulfing"
     label.new(bar_index, patternLabelPosLow, text="BE", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBearishEngulfing)
+    
 bgcolor(ta.lowest(C_EngulfingBullish?1:0, C_EngulfingBearishNumberOfCandles)!=0 ? color.new(color.blue, 90) : na, offset=-(C_EngulfingBearishNumberOfCandles-1))

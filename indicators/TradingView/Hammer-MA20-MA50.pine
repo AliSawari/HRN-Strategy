@@ -1,0 +1,109 @@
+// Author: @AliSawari 2023
+
+//@version=5
+indicator("Hammer MA20-MA50", shorttitle = "Hammer MA20-MA50", overlay=true)
+
+// MA 
+ma20 = ta.sma(close, 20)
+ma50 = ta.sma(close, 50)
+ma200 = ta.sma(close, 200)
+rsi = ta.rsi(close, 14)
+// MA for the prev candle
+ma20_1 = ta.sma(close[1], 20)
+ma50_1 = ta.sma(close[1], 50)
+ma200_1 = ta.sma(close[1], 200)
+// MA for pullback approximation
+ma18 = ta.sma(close, 18)
+ma18_1 = ta.sma(close[1], 18)
+ma48 = ta.sma(close, 48)
+ma48_1 = ta.sma(close[1], 48)
+
+
+// MA comparison & RSI Validation
+isUpTrend = (ma20 > ma50) and (ma50 > ma200) and (ma20_1 > ma50_1) and (ma50_1 > ma200_1) and rsi < 70
+isDownTrend = (ma20 < ma50) and (ma50 < ma200) and (ma20_1 < ma50_1) and (ma50_1 < ma200_1) and rsi > 30
+
+// MAs increasing in value
+isMAsIncreasing = ma20 > ma20_1 and ma50 > ma50_1
+// MAs decreasing in value
+isMAsDecreasing = ma20 < ma20_1 and ma50 < ma50_1
+
+
+// is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
+isHitting1 = (ma20 <= high and ma20 >= low) or (ma18 <= high and ma18 >= low)
+isHitting2 = (ma20_1 <= high[1] and ma20_1 >= low[1]) or (ma18_1 <= high[1] and ma18_1 >= low[1])
+isHitting20 = isHitting1 or isHitting2
+
+isHitting3 = (ma50 <= high and ma50 >= low) or (ma48 <= high and ma48 >= low)
+isHitting4 = (ma50_1 <= high[1] and ma50_1 >= low[1]) or (ma48_1 <= high[1] and ma48_1 >= low[1])
+isHitting50 = isHitting3 or isHitting4
+
+
+// Hammer Buy Pattern
+upperShadowB = high - math.max(open, close)
+bodyLengthB = math.abs(close - open)
+lowerShadowB = math.min(open, close) - low
+prevUpperShadow = high[1] - math.max(open[1], close[1])
+prevBodyLengthB = math.abs(close[1] - open[1])
+isBodyBiggerThanUpperShadow = bodyLengthB >= upperShadowB
+isLowerShadowTwiceTheBody = lowerShadowB >= 2 * bodyLengthB
+isCloseLowerThan = close < math.max(open[1], close[1])
+isShadowTrailingBelow = low < low[1]
+isPrevNotHammerB = prevBodyLengthB >= prevUpperShadow
+isCloseAboveMA20 = close >= ma20
+isCloseAboveMA50 = close >= ma50
+
+isHammerBuy20 = isBodyBiggerThanUpperShadow and isLowerShadowTwiceTheBody and isCloseLowerThan and isShadowTrailingBelow and isPrevNotHammerB and isCloseAboveMA20
+isHammerBuy50 = isBodyBiggerThanUpperShadow and isLowerShadowTwiceTheBody and isCloseLowerThan and isShadowTrailingBelow and isPrevNotHammerB and isCloseAboveMA50
+
+
+
+// Hammer Sell Pattern
+upperShadowS = high - math.max(open, close)
+bodyLengthS = math.abs(close - open)
+lowerShadowS = math.min(open, close) - low
+prevLowerShadow = math.min(open[1], close[1]) - low[1]
+prevBodyLengthS = math.abs(close[1] - open[1])
+isBodyBiggerThanLowerShadow = bodyLengthS >= lowerShadowS
+isUpperShadowTwiceTheBody = upperShadowS >= 2 * bodyLengthS
+isCloseAboveThan = close > math.min(open[1], close[1])
+isShadowTrailingAbove = high > high[1]
+isPrevNotHammerS = prevBodyLengthS >= prevLowerShadow
+isCloseBelowMA20 = close <= ma20
+isCloseBelowMA50 = close <= ma50
+
+isHammerSell20 = isBodyBiggerThanLowerShadow and isUpperShadowTwiceTheBody and isCloseAboveThan and isShadowTrailingAbove and isPrevNotHammerS and isCloseBelowMA20
+isHammerSell50 = isBodyBiggerThanLowerShadow and isUpperShadowTwiceTheBody and isCloseAboveThan and isShadowTrailingAbove and isPrevNotHammerS and isCloseBelowMA50
+
+
+// final conditions
+conditionUptrend20 = isUpTrend and isMAsIncreasing and isHitting20 and isHammerBuy20
+conditionUptrend50 = isUpTrend and isMAsIncreasing and isHitting50 and isHammerBuy50
+conditionDowntrend20 = isDownTrend and isMAsDecreasing and isHitting20 and isHammerSell20
+conditionDowntrend50 = isDownTrend and isMAsDecreasing and isHitting50 and isHammerSell50
+
+conditionUptrend = conditionUptrend20 or conditionUptrend50
+conditionDowntrend = conditionDowntrend20 or conditionDowntrend50
+
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+LabelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorSell = input(color.red, "Label Color Bearish")
+labelColorBuy = input(color.blue, "Label Color Bullish")
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
+
+
+// main
+if conditionUptrend20
+    label.new(bar_index, labelPositionBuy, text = "H20B", style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = "Hammer MA20 Buy")
+else if conditionUptrend50
+    label.new(bar_index, labelPositionBuy, text = "H50B", style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = "Hammer MA50 Buy")
+else if conditionDowntrend20
+    label.new(bar_index, LabelPositionSell, text = "H20S", style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = "Hammer MA20 Sell")
+else if conditionDowntrend50
+    label.new(bar_index, LabelPositionSell, text = "H50S", style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = "Hammer MA50 Sell")
+
+// alerts 
+alertcondition(conditionUptrend, title = "Buy Hammer", message = "Buy Hammer")
+alertcondition(conditionDowntrend, title = "Sell Hammer", message = "Sell Hammer")

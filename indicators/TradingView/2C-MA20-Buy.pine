@@ -66,6 +66,10 @@ labelPositionBuy = low - (ta.atr(30) * 0.6)
 LabelPositionSell = high + (ta.atr(30) * 0.6)
 labelColorSell = input(color.red, "Label Color Bearish")
 labelColorBuy = input(color.blue, "Label Color Bullish")
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
 
 
 // main
