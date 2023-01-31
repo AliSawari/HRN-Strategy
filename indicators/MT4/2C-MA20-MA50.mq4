@@ -131,7 +131,9 @@ int OnCalculate(const int rates_total,
     float upperShadow2 = High[i+2] - MathMax(Open[i+2], Close[i+2]);
     bool isUpperShadowsSmallerThanBodies = upperShadow1 < body1B && upperShadow2 < body2B;
     bool isCloseAbove20 = Close[i+1] > MA20_1;
+    bool isCloseAbove50 = Close[i+1] > MA50_1;
     bool is2CBuy20 = isPrevBear && isCurrentBull && isHigherClose && isUpperShadowsSmallerThanBodies && isCloseAbove20;
+    bool is2CBuy50 = isPrevBear && isCurrentBull && isHigherClose && isUpperShadowsSmallerThanBodies && isCloseAbove50;
     // is 2 Candle pattern Sell MA20
     bool isPrevBull = Open[i+2] < Close[i+2];
     bool isCurrentBear = Open[i+1] > Close[i+1];
@@ -142,21 +144,25 @@ int OnCalculate(const int rates_total,
     float lowerShadow2 = MathMin(Open[i+2], Close[i+2]) - Low[i+2];
     bool isLowerShadowsSmallerThanBodies = lowerShadow1 < body1S && lowerShadow2 < body2S;
     bool isCloseBelow20 = Close[i+1] < MA20_1;
+    bool isCloseBelow50 = Close[i+1] < MA50_1;
     bool is2CSell20 = isPrevBull && isCurrentBear && isLowerClose && isLowerShadowsSmallerThanBodies && isCloseBelow20;
+    bool is2CSell50 = isPrevBull && isCurrentBear && isLowerClose && isLowerShadowsSmallerThanBodies && isCloseBelow50;
 
 
     // final conditions
     bool conditionUptrend20 = isUptrend && isMAsIncreasing && isHittingMA20 && is2CBuy20;
     bool conditionDowntrend20 = isDowntrend && isMAsDecreasing && isHittingMA20 && is2CSell20;
+    bool conditionUptrend50 = isUptrend && isMAsIncreasing && isHittingMA50 && is2CBuy50;
+    bool conditionDowntrend50 = isDowntrend && isMAsDecreasing && isHittingMA50 && is2CSell50;
 
-    if(conditionUptrend20) {
+    if(conditionUptrend20 || conditionUptrend50) {
       Buffer1[i] = Low[1+i];
-      if(i == 0 && Time[0] != time_alert) myAlert("indicator", "Buy 2C-MA20"); time_alert = Time[0];
+      if(i == 0 && Time[0] != time_alert) myAlert("indicator", conditionUptrend20 ? "Buy 2C-MA20" : "Buy 2C-MA50"); time_alert = Time[0];
     } else Buffer1[i] = EMPTY_VALUE;
     
-    if(conditionDowntrend20){
+    if(conditionDowntrend20 || conditionDowntrend50){
       Buffer2[i] = Low[1+i];
-      if(i == 0 && Time[0] != time_alert) myAlert("indicator", "Sell 2C-MA20"); time_alert = Time[0];
+      if(i == 0 && Time[0] != time_alert) myAlert("indicator", conditionDowntrend20 ? "Sell 2C-MA20" : "Sell 2C-MA50"); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
 
   }
