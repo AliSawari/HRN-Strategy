@@ -121,7 +121,7 @@ int OnCalculate(const int rates_total,
     bool isHitting3 = (MA50_1 <= High[i+1] && MA50_1 >= Low[i+1]) || (MA48_1 <= High[i+1] && MA48_1 >= Low[i+1]);
     bool isHitting4 = (MA50_2 <= High[i+2] && MA50_2 >= Low[i+2]) || (MA48_2 <= High[i+2] && MA48_2 >= Low[i+2]);
     bool isHittingMA50 = isHitting3 || isHitting4;
-    // is 2 Candle pattern Buy MA20
+    // is 2 Candle pattern Buy 
     bool isPrevBear = Open[i+2] > Close[i+2];
     bool isCurrentBull = Open[i+1] < Close[i+1];
     bool isHigherClose = Close[i+1] > MathMax(Open[i+2], Close[i+2]);
@@ -134,7 +134,7 @@ int OnCalculate(const int rates_total,
     bool isCloseAbove50 = Close[i+1] > MA50_1;
     bool is2CBuy20 = isPrevBear && isCurrentBull && isHigherClose && isUpperShadowsSmallerThanBodies && isCloseAbove20;
     bool is2CBuy50 = isPrevBear && isCurrentBull && isHigherClose && isUpperShadowsSmallerThanBodies && isCloseAbove50;
-    // is 2 Candle pattern Sell MA20
+    // is 2 Candle pattern Sell
     bool isPrevBull = Open[i+2] < Close[i+2];
     bool isCurrentBear = Open[i+1] > Close[i+1];
     bool isLowerClose = Close[i+1] < MathMin(Open[i+2], Close[i+2]);
