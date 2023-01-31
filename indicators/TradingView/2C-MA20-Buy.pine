@@ -17,8 +17,8 @@ ma18 = ta.sma(close, 18)
 ma18_1 = ta.sma(close[1], 18)
 
 // MA comparison & RSI Validation
-isUpTrend = (ma20 > ma50) and (ma50 > ma200) and (ma20_1 > ma50_1) and (ma50_1 > ma200_1) and rsi < 70
-isDownTrend = (ma20 < ma50) and (ma50 < ma200) and (ma20_1 < ma50_1) and (ma50_1 < ma200_1) and rsi > 30
+isUptrend = (ma20 > ma50) and (ma50 > ma200) and (ma20_1 > ma50_1) and (ma50_1 > ma200_1) and rsi < 70
+isDowntrend = (ma20 < ma50) and (ma50 < ma200) and (ma20_1 < ma50_1) and (ma50_1 < ma200_1) and rsi > 30
 
 // MAs increasing in value
 isMAsIncreasing = ma20 > ma20_1 and ma50 > ma50_1
@@ -51,15 +51,15 @@ isLowerClose = close < math.min(open[1], close[1])
 isLowerShadow = low < low[1]
 body1S = math.abs(close - open)
 body2S = math.abs(open[1] - close[1])
-belowShadow1 = math.min(open, close) - low
-belowShadow2 = math.min(open[1], close[1]) - low[1]
-isBelowShadowsSmallerThanBodies = belowShadow1 < body1S and belowShadow2 < body2S
+lowerShadow1 = math.min(open, close) - low
+lowerShadow2 = math.min(open[1], close[1]) - low[1]
+isBelowShadowsSmallerThanBodies = lowerShadow1 < body1S and lowerShadow2 < body2S
 isCloseBelow20 = close < ma20
 is2CSell = isPrevBull and isCurrentBear and isLowerClose and isBelowShadowsSmallerThanBodies and isCloseBelow20
 
 // final conditions
-conditionUptrend = isUpTrend and isMAsIncreasing and isHitting and is2CBuy
-conditionDowntrend = isDownTrend and isMAsDecreasing and isHitting and is2CSell
+conditionUptrend = isUptrend and isMAsIncreasing and isHitting and is2CBuy
+conditionDowntrend = isDowntrend and isMAsDecreasing and isHitting and is2CSell
 
 // styling
 labelPositionBuy = low - (ta.atr(30) * 0.6)
