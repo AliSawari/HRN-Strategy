@@ -129,7 +129,7 @@ int OnCalculate(const int rates_total,
     float prevBodyLengthB = MathAbs(Close[i+2] - Open[i+2]);
     bool isBodyBiggerThanUpperShadow = bodyLengthB >= upperShadowB;
     bool isLowerShadowTwiceTheBody = lowerShadowB >= (2 * bodyLengthB);
-    bool isCloseLowerThan = Close[i+1] < MathMax(Open[i+2], Close[i+2]);
+    bool isCloseLowerThan = MathMax(Open[i+1], Close[i+1]) < MathMax(Open[i+2], Close[i+2]);
     bool isShadowTrailingBelow = Low[i+1] < Low[i+2];
     bool isPrevNotHammerB = prevBodyLengthB >= prevUpperShadow;
     bool isCloseAboveMA20 = Close[i+1] >= MA20_1;
@@ -144,7 +144,7 @@ int OnCalculate(const int rates_total,
     float prevBodyLengthS = MathAbs(Close[i+2] - Open[i+2]);
     bool isBodyBiggerThanLowerShadow = bodyLengthS >= lowerShadowS;
     bool isUpperShadowTwiceTheBody = upperShadowS >= (2 * bodyLengthS);
-    bool isCloseAboveThan = Close[i+1] > MathMin(Open[i+2], Close[i+2]);
+    bool isCloseAboveThan = MathMin(Open[i+1], Close[i+1]) > MathMin(Open[i+2], Close[i+2]);
     bool isShadowTrailingAbove = High[i+1] > High[i+2];
     bool isPrevNotHammerS = prevBodyLengthS >= prevLowerShadow;
     bool isCloseBelowMA20 = Close[i+1] <= MA20_1;
