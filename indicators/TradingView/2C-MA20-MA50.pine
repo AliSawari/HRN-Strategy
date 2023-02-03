@@ -1,0 +1,140 @@
+// Author: @AliSawari 2023
+
+//@version=5
+indicator("2C-MA20-MA50", shorttitle = "2C Pattern MA20-MA50", overlay=true)
+
+// MA, RSI, MACD, ATR
+ma20 = ta.sma(close, 20)
+ma50 = ta.sma(close, 50)
+ma200 = ta.sma(close, 200)
+rsi = ta.rsi(close, 14)
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+atr = ta.atr(14)
+// MA for the prev candle
+ma20_1 = ta.sma(close[1], 20)
+ma50_1 = ta.sma(close[1], 50)
+ma200_1 = ta.sma(close[1], 200)
+// MA for pullback approximation
+ma18 = ta.sma(close, 18)
+ma18_1 = ta.sma(close[1], 18)
+ma48 = ta.sma(close, 48)
+ma48_1 = ta.sma(close[1], 48)
+
+// MA comparison & RSI, MACD Validation
+
+isUptrend = (ma20 > ma50) and (ma50 > ma200) and (ma20_1 > ma50_1) and (ma50_1 > ma200_1)
+isDowntrend = (ma20 < ma50) and (ma50 < ma200) and (ma20_1 < ma50_1) and (ma50_1 < ma200_1)
+
+
+RSIValidationUptrend = rsi < 70 
+RSIValidationDowntrend = rsi > 30
+MACDValidationUptrend = macdLine[1] <= signalLine[1] or macdLine[2] <= signalLine[2]
+MACDValidationDowntrend = macdLine[1] >= signalLine[1] or macdLine[2] >= signalLine[2]
+
+// MAs & MACDs increasing in value
+isMAsIncreasing = ma20 > ma20_1 and ma50 > ma50_1
+// MAs & MACDs decreasing in value
+isMAsDecreasing = ma20 < ma20_1 and ma50 < ma50_1
+
+
+// is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
+isHitting1 = (ma20 <= high and ma20 >= low) or (ma18 <= high and ma18 >= low)
+isHitting2 = (ma20_1 <= high[1] and ma20_1 >= low[1]) or (ma18_1 <= high[1] and ma18_1 >= low[1])
+isHittingMA20 = isHitting1 or isHitting2
+isHitting3 = (ma50 <= high and ma50 >= low) or (ma48 <= high and ma48 >= low)
+isHitting4 = (ma50_1 <= high[1] and ma50_1 >= low[1]) or (ma48_1 <= high[1] and ma48_1 >= low[1])
+isHittingMA50 = isHitting3 or isHitting4
+
+// isHitting in General
+isHitting = isHittingMA20 or isHittingMA50
+
+// if conditions met for Indicator Values
+isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing
+isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing
+
+// is 2 Candle pattern Buy
+isPrevBear = open[1] > close[1]
+isCurrentBull = open < close
+isHigherClose = close > math.max(open[1], close[1])
+isHigherShadow = high > high[1]
+body1B = math.abs(close - open)
+body2B = math.abs(open[1] - close[1])
+upperShadow1 = high - math.max(open, close)
+upperShadow2 = high[1] - math.max(open[1], close[1])
+isUpperShadowsSmallerThanBodies = upperShadow1 < body1B and upperShadow2 < body2B
+isCloseAbove20 = close > ma20
+isCloseAbove50 = close > ma50
+is2CPatternBuy = isPrevBear and isCurrentBull and isHigherClose and isHigherShadow and isUpperShadowsSmallerThanBodies
+is2CBuy20 = is2CPatternBuy and isCloseAbove20
+is2CBuy50 = is2CPatternBuy and isCloseAbove50
+
+// is 2 Candle pattern Sell
+isPrevBull = open[1] < close[1]  
+isCurrentBear = open > close
+isLowerClose = close < math.min(open[1], close[1])
+isLowerShadow = low < low[1]
+body1S = math.abs(close - open)
+body2S = math.abs(open[1] - close[1])
+belowShadow1 = math.min(open, close) - low
+belowShadow2 = math.min(open[1], close[1]) - low[1]
+isBelowShadowsSmallerThanBodies = belowShadow1 < body1S and belowShadow2 < body2S
+isCloseBelow20 = close < ma20
+isCloseBelow50 = close < ma50
+is2CPatternSell = isPrevBull and isCurrentBear and isLowerClose and isLowerShadow and isBelowShadowsSmallerThanBodies
+is2CSell20 = is2CPatternSell and isCloseBelow20
+is2CSell50 = is2CPatternSell and isCloseBelow50
+
+
+// final conditions
+conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and is2CBuy20
+conditionUptrend50 = isConditionsMetUptrend and isHittingMA50 and is2CBuy50
+conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and is2CSell20
+conditionDowntrend50 = isConditionsMetDowntrend and isHittingMA50 and is2CSell50
+
+conditionUptrend = conditionUptrend20 or conditionUptrend50
+conditionDowntrend = conditionDowntrend20 or conditionDowntrend50
+
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+LabelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorSell = input(color.red, "Label Color Bearish")
+labelColorBuy = input(color.blue, "Label Color Bullish")
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
+plot(ma20, color = color.blue)
+plot(ma50, color = color.orange)
+plot(ma200, color = color.black)
+
+getCorrectMSG(type) =>
+    msg = ""
+    if type == "text"
+        msg := if conditionUptrend20
+            "B2C-20"
+        else if conditionUptrend50
+            "B2C-50"
+        else if conditionDowntrend20
+            "S2C-20"
+        else if conditionDowntrend50
+            "S2C-50"
+    if type == "tooltip"
+        msg := if conditionUptrend20
+            "Buy 2C MA20"
+        else if conditionUptrend50
+            "Buy 2C MA50"
+        else if conditionDowntrend20
+            "Sell 2C MA20"
+        else if conditionDowntrend50
+            "Sell 2C MA50"
+    
+    msg
+
+
+// main
+if conditionUptrend
+    label.new(bar_index, labelPositionBuy, text = getCorrectMSG("text"), style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = getCorrectMSG("tooltip"))
+else if conditionDowntrend
+    label.new(bar_index, LabelPositionSell, text = getCorrectMSG("text"), style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = getCorrectMSG("tooltip") )
+
+
