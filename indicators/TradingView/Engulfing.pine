@@ -1,72 +1,154 @@
+// Author: @AliSawari 2023
+
 //@version=5
-indicator("Engulfing - Bearish", shorttitle = "Engulfing - Bear", overlay=true)
+indicator("Engulfing", shorttitle = "Engulfing", overlay=true)
 
-C_DownTrend = true
-C_UpTrend = true
-var trendRule1 = "HRN"
-var trendRule = input.string("HRN", "Detect Trend Based On", options=[trendRule1, "No detection"])
-
+// MA, RSI, MACD, ATR
 ma8 = ta.sma(close, 8)
 ma20 = ta.sma(close, 20)
 ma50 = ta.sma(close, 50)
+rsi = ta.rsi(close, 14)
+// [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+// atr = ta.atr(14)
+// MA for the prev candle
+ma8_1 = ta.sma(close[1], 8)
+ma20_1 = ta.sma(close[1], 20)
+ma50_1 = ta.sma(close[1], 50)
+// MA for pullback approximation
+ma7 = ta.sma(close, 7)
+ma7_1 = ta.sma(close[1], 7)
+ma19 = ta.sma(close, 19)
+ma19_1 = ta.sma(close[1], 19)
+ma49 = ta.sma(close, 49)
+ma49_1 = ta.sma(close[1], 49)
 
-C_DownTrend := (ma8 < ma20) and (ma20 < ma50)
-C_UpTrend := (ma8 > ma20) and (ma20 > ma50)
+isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8_1 > ma20_1) and (ma20_1 > ma50_1)
+isDowntrend = (ma8 < ma20) and (ma20 < ma50) and (ma8_1 < ma20_1) and (ma20_1 < ma50_1)
 
+RSIValidationUptrend = rsi < 70 
+RSIValidationDowntrend = rsi > 70
 
-C_Len = 14 // ta.ema depth for bodyAvg
-C_ShadowPercent = 5.0 // size of shadows
-C_ShadowEqualsPercent = 100.0
-C_DojiBodyPercent = 5.0
-C_Factor = 2.0 // shows the number of times the shadow dominates the candlestick body
+// MAs increasing in value
+isMAsIncreasing = ma8 > ma8_1 and ma20 > ma20_1 and ma50 > ma50_1
+isMAsIncreasingFor50 = ma20 > ma20_1 and ma50 > ma50_1
+// MAs decreasing in value
+isMAsDecreasing = ma8 < ma8_1 and ma20 < ma20_1 and ma50 < ma50_1
+isMAsDecreasingFor50 = ma20 < ma20_1 and ma50 < ma50_1
 
-C_BodyHi = math.max(close, open)
-C_BodyLo = math.min(close, open)
-C_Body = C_BodyHi - C_BodyLo
-C_BodyAvg = ta.ema(C_Body, C_Len)
-C_SmallBody = C_Body < C_BodyAvg
-C_LongBody = C_Body > C_BodyAvg
-C_UpShadow = high - C_BodyHi
-C_DnShadow = C_BodyLo - low
-C_HasUpShadow = C_UpShadow > C_ShadowPercent / 100 * C_Body
-C_HasDnShadow = C_DnShadow > C_ShadowPercent / 100 * C_Body
-C_WhiteBody = open < close
-C_BlackBody = open > close
-C_Range = high-low
-C_IsInsideBar = C_BodyHi[1] > C_BodyHi and C_BodyLo[1] < C_BodyLo
-C_BodyMiddle = C_Body / 2 + C_BodyLo
-C_ShadowEquals = C_UpShadow == C_DnShadow or (math.abs(C_UpShadow - C_DnShadow) / C_DnShadow * 100) < C_ShadowEqualsPercent and (math.abs(C_DnShadow - C_UpShadow) / C_UpShadow * 100) < C_ShadowEqualsPercent
-C_IsDojiBody = C_Range > 0 and C_Body <= C_Range * C_DojiBodyPercent / 100
-C_Doji = C_IsDojiBody and C_ShadowEquals
+// is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
+isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
+isHitting2 = (ma8_1 <= high[1] and ma8_1 >= low[1]) or (ma7_1 <= high[1] and ma7_1 >= low[1])
+isHittingMA8 = isHitting1 or isHitting2
+isHitting3 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
+isHitting4 = (ma20_1 <= high[1] and ma20_1 >= low[1]) or (ma19_1 <= high[1] and ma19_1 >= low[1])
+isHittingMA20 = isHitting3 or isHitting4
+isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
+isHitting6 = (ma50_1 <= high[1] and ma50_1 >= low[1]) or (ma49_1 <= high[1] and ma49_1 >= low[1])
+isHittingMA50 = isHitting5 or isHitting6
 
-patternLabelPosLow = low - (ta.atr(30) * 0.6)
-patternLabelPosHigh = high + (ta.atr(30) * 0.6)
+// isHitting in General
+isHitting = isHittingMA8 or isHittingMA20 or isHittingMA50
 
-label_color_bearish = input(color.red, "Label Color Bearish")
-label_color_bullish = input(color.blue, "Label Color Bullish")
+// if conditions met for Indicator Values
+isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing
+isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing
 
+isConditionsMetUptrendFor50 = isUptrend and RSIValidationUptrend  and isMAsIncreasingFor50
+isConditionsMetDowntrendFor50 = isDowntrend and RSIValidationDowntrend and isMAsDecreasingFor50
 
-C_EngulfingBearishNumberOfCandles = 2
+// is Engulfing Pattern Buy
+isPrevBear = open[1] > close[1]
+isCurrentBull = open < close
+isEngulfingBodyB = close > open[1] and open <= close[1]
+isEngulfingShadow = high >= high[1] and low <= low[1]
+body1 = math.abs(close - open)
+body2 = math.abs(open[1] - close[1])
+upperShadow1 = high - math.max(open, close)
+upperShadow2 = high[1] - math.max(open[1], close[1])
+isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2
+isCloseAbove8 = close > ma8
+isCloseAbove20 = close > ma20
+isCloseAbove50 = close > ma50
+isEngulfingBuyPattern = isPrevBear and isCurrentBull and isEngulfingBodyB and isEngulfingShadow and isUpperShadowsSmallerThanBodies
+isEngulfingBuy8 = isEngulfingBuyPattern and isCloseAbove20
+isEngulfingBuy20 = isEngulfingBuyPattern and isCloseAbove20
+isEngulfingBuy50 = isEngulfingBuyPattern and isCloseAbove50
 
-C_EngulfingBearish = C_DownTrend and C_BlackBody and C_WhiteBody[1] and close < open[1] and open > close[1] and high > high[1] and low < low[1]
+// is Engulfing Pattern Sell
+isPrevBull = open[1] < close[1]  
+isCurrentBear = open > close
+isEngulfingBodyS = close < open[1] and open >= close[1]
+lowerShadow1 = math.min(open, close) - low
+lowerShadow2 = math.min(open[1], close[1]) - low[1]
+isLowerShadowsSmallerThanBodies = lowerShadow1 < body1 and lowerShadow2 < body2
+isCloseBelowMA8 = close < ma8
+isCloseBelowMA20 = close < ma20
+isCloseBelowMA50 = close < ma50
+isEngulfingSellPattern = isPrevBull and isCurrentBear and isEngulfingBodyS and isEngulfingShadow and isLowerShadowsSmallerThanBodies
+isEngulfingSell8 = isEngulfingSellPattern and isCloseBelowMA8
+isEngulfingSell20 = isEngulfingSellPattern and isCloseBelowMA20
+isEngulfingSell50 = isEngulfingSellPattern and isCloseBelowMA50
 
-C_EngulfingBullish = C_UpTrend and C_WhiteBody and C_BlackBody[1] and close > open[1] and open < close[1] and high > high[1] and low < low[1]
+// final conditions
+conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isEngulfingBuy8
+conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isEngulfingBuy20
+conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isEngulfingBuy50
+conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isEngulfingSell8
+conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isEngulfingSell20
+conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isEngulfingSell50
 
+conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
+conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
 
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+LabelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorSell = input(color.red, "Label Color Bearish")
+labelColorBuy = input(color.blue, "Label Color Bullish")
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
+plot(ma8, color = color.red)
+plot(ma20, color = color.blue)
+plot(ma50, color = color.black)
 
-alertcondition(C_EngulfingBearish, title = "New pattern detected", message = "New Engulfing – Bearish pattern detected")
-if C_EngulfingBearish
-    var ttBearishEngulfing = "Bearish Engulfing"
-    label.new(bar_index, patternLabelPosHigh, text="BE", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishEngulfing)
-
-
-bgcolor(ta.highest (C_EngulfingBearish?1:0, C_EngulfingBearishNumberOfCandles) !=0 ? color.new(color.red, 90) : na, offset=-(C_EngulfingBearishNumberOfCandles-1))
-
-
-alertcondition(C_EngulfingBullish, title = "New pattern detected", message = "New Engulfing – Bullish pattern detected")
-
-if C_EngulfingBullish
-    var ttBearishEngulfing = "Bullish Engulfing"
-    label.new(bar_index, patternLabelPosLow, text="BE", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBearishEngulfing)
+getCorrectMSG(type) =>
+    msg = ""
+    if type == "text"
+        msg := if conditionUptrend8
+            "BE8"
+        else if conditionUptrend20
+            "BE20"
+        else if conditionUptrend50
+            "BE50"
+        else if conditionDowntrend8
+            "SE8"
+        else if conditionDowntrend20
+            "SE20"
+        else if conditionDowntrend50
+            "SE50"
+    if type == "tooltip"
+        msg := if conditionUptrend8
+            "Buy Engulfing MA8"
+        else if conditionUptrend20
+            "Buy Engulfing MA20"
+        else if conditionUptrend50
+            "Buy Engulfing MA50"
+        else if conditionDowntrend8
+            "Sell Engulfing MA8"
+        else if conditionDowntrend20
+            "Sell Engulfing MA20"
+        else if conditionDowntrend50
+            "Sell Engulfing MA50"
     
-bgcolor(ta.lowest(C_EngulfingBullish?1:0, C_EngulfingBearishNumberOfCandles)!=0 ? color.new(color.blue, 90) : na, offset=-(C_EngulfingBearishNumberOfCandles-1))
+    msg
+
+
+// main
+if conditionUptrend
+    label.new(bar_index, labelPositionBuy, text = getCorrectMSG("text"), style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = getCorrectMSG("tooltip"))
+else if conditionDowntrend
+    label.new(bar_index, LabelPositionSell, text = getCorrectMSG("text"), style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = getCorrectMSG("tooltip") )
+
+
