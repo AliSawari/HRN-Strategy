@@ -37,14 +37,6 @@ void myAlert(string type, string message) {
   else if(type == "indicator") {
     Print(type + MSG_LABEL + Symbol() + "," + IntegerToString(Period()) + " | " + message );
     if(Audible_Alerts) Alert(type + MSG_LABEL + Symbol() + "," + IntegerToString(Period()) + " | " + message);
-
-    // handle = FileOpen("Buy Hammer-8 MT4.txt", FILE_TXT|FILE_READ|FILE_WRITE|FILE_SHARE_READ|FILE_SHARE_WRITE, ';');
-    // if(handle != INVALID_HANDLE) {
-    //   FileSeek(handle, 0, SEEK_END);
-    //   FileWrite(handle, type+" | Buy Hammer-8 MT4 @ "+Symbol()+","+IntegerToString(Period())+" | "+message);
-    //   FileClose(handle);
-    // }
-
     if(Push_Notifications) SendNotification(type + MSG_LABEL + Symbol() + "," + IntegerToString(Period()) + " | " + message);
   }
 }
@@ -108,9 +100,11 @@ int OnCalculate(const int rates_total,
     float MA18_2 = iMA(NULL, PERIOD_CURRENT, 18, 0, MODE_SMA, PRICE_CLOSE, i+2);
     float MA48_1 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+1);
     float MA48_2 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    // MA comparison & RSI Validation
-    bool isUptrend = MA20_1 > MA50_1 && MA50_1 > MA200_1 && MA20_2 > MA50_2 && MA50_2 > MA200_2 && RSI < 70;
-    bool isDowntrend = MA20_1 < MA50_1 && MA50_1 < MA200_1 && MA20_2 < MA50_2 && MA50_2 < MA200_2 && RSI > 30;
+
+    bool isUptrend = MA20_1 > MA50_1 && MA50_1 > MA200_1 && MA20_2 > MA50_2 && MA50_2 > MA200_2;
+    bool isDowntrend = MA20_1 < MA50_1 && MA50_1 < MA200_1 && MA20_2 < MA50_2 && MA50_2 < MA200_2;
+    bool RSIValidationUptrend = RSI < 70;
+    bool RSIValidationDowntrend = RSI > 30;
     // MAs increasing in value
     bool isMAsIncreasing = MA20_1 > MA20_2 && MA50_1 > MA50_2;
     bool isMAsDecreasing = MA20_1 < MA20_2 && MA50_1 < MA50_2;
@@ -121,6 +115,13 @@ int OnCalculate(const int rates_total,
     bool isHitting3 = (MA50_1 <= High[i+1] && MA50_1 >= Low[i+1]) || (MA48_1 <= High[i+1] && MA48_1 >= Low[i+1]);
     bool isHitting4 = (MA50_2 <= High[i+2] && MA50_2 >= Low[i+2]) || (MA48_2 <= High[i+2] && MA48_2 >= Low[i+2]);
     bool isHittingMA50 = isHitting3 || isHitting4;
+
+    // All Indicators Conditions Boolean
+    bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend;
+    bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend;
+
+
+
     // is Hammer Pattern  Buy
     float upperShadowB = High[i+1] - MathMax(Open[i+1], Close[i+1]);
     float bodyLengthB = MathAbs(Close[i+1] - Open[i+1]);
@@ -131,11 +132,14 @@ int OnCalculate(const int rates_total,
     bool isLowerShadowTwiceTheBody = lowerShadowB >= (2 * bodyLengthB);
     bool isCloseLowerThan = MathMax(Open[i+1], Close[i+1]) < MathMax(Open[i+2], Close[i+2]);
     bool isShadowTrailingBelow = Low[i+1] < Low[i+2];
-    bool isPrevNotHammerB = prevBodyLengthB >= prevUpperShadow;
-    bool isCloseAboveMA20 = Close[i+1] >= MA20_1;
-    bool isCloseAboveMA50 = Close[i+1] >= MA50_1;
-    bool isHammerBuy20 = isBodyBiggerThanUpperShadow && isLowerShadowTwiceTheBody && isCloseLowerThan && isShadowTrailingBelow && isPrevNotHammerB && isCloseAboveMA20;
-    bool isHammerBuy50 = isBodyBiggerThanUpperShadow && isLowerShadowTwiceTheBody && isCloseLowerThan && isShadowTrailingBelow && isPrevNotHammerB && isCloseAboveMA50;
+    bool isPrevNotHammerB = (prevBodyLengthB * 2) >= prevUpperShadow;
+    bool isFiftyPercentBelowMA20 = (Low[i+1] + ( 0.5 * lowerShadowB )) <= MA20_1;
+    bool isFiftyPercentBelowMA50 = (Low[i+1] + ( 0.5 * lowerShadowB )) <= MA50_1;
+    bool isCloseAboveMA20 = MathMax(Open[i+1], Close[i+1]) >= MA20_1;
+    bool isCloseAboveMA50 = MathMax(Open[i+1], Close[i+1]) >= MA50_1;
+    bool isHammerPatternBuy = isBodyBiggerThanUpperShadow && isLowerShadowTwiceTheBody && isShadowTrailingBelow && isPrevNotHammerB;
+    bool isHammerBuy20 = isHammerPatternBuy && isCloseAboveMA20 && isFiftyPercentBelowMA20;
+    bool isHammerBuy50 = isHammerPatternBuy && isCloseAboveMA50 && isFiftyPercentBelowMA50;
     // is Hammer Pattern  Sell
     float upperShadowS = High[i+1] - MathMax(Open[i+1], Close[i+1]);
     float bodyLengthS = MathAbs(Close[i+1] - Open[i+1]);
@@ -146,19 +150,21 @@ int OnCalculate(const int rates_total,
     bool isUpperShadowTwiceTheBody = upperShadowS >= (2 * bodyLengthS);
     bool isCloseAboveThan = MathMin(Open[i+1], Close[i+1]) > MathMin(Open[i+2], Close[i+2]);
     bool isShadowTrailingAbove = High[i+1] > High[i+2];
-    bool isPrevNotHammerS = prevBodyLengthS >= prevLowerShadow;
-    bool isCloseBelowMA20 = Close[i+1] <= MA20_1;
-    bool isCloseBelowMA50 = Close[i+1] <= MA50_1;
-    bool isHammerSell20 = isBodyBiggerThanLowerShadow && isUpperShadowTwiceTheBody && isCloseAboveThan && isShadowTrailingAbove && isPrevNotHammerS && isCloseBelowMA20;
-    bool isHammerSell50 = isBodyBiggerThanLowerShadow && isUpperShadowTwiceTheBody && isCloseAboveThan && isShadowTrailingAbove && isPrevNotHammerS && isCloseBelowMA50;
-
+    bool isPrevNotHammerS = (prevBodyLengthS * 2) >= prevLowerShadow;
+    bool isFiftyPercentAboveMA20 = (High[i+1] - (0.5 * upperShadowS)) >= MA20_1;
+    bool isFiftyPercentAboveMA50 = (High[i+1] - (0.5 * upperShadowS)) >= MA50_1;
+    bool isCloseBelowMA20 = MathMin(Open[i+1], Close[i+1]) <= MA20_1;
+    bool isCloseBelowMA50 = MathMin(Open[i+1], Close[i+1]) <= MA50_1;
+    bool isHammerPatternSell = isBodyBiggerThanLowerShadow && isUpperShadowTwiceTheBody && isShadowTrailingAbove && isPrevNotHammerS;
+    bool isHammerSell20 = isHammerPatternSell && isCloseBelowMA20 && isFiftyPercentAboveMA20;
+    bool isHammerSell50 = isHammerPatternSell && isCloseBelowMA50 && isFiftyPercentAboveMA50;
 
 
     // final conditions
-    bool conditionUptrend20 = isUptrend && isMAsIncreasing && isHittingMA20 && isHammerBuy20;
-    bool conditionDowntrend20 = isDowntrend && isMAsDecreasing && isHittingMA20 && isHammerSell20;
-    bool conditionUptrend50 = isUptrend && isMAsIncreasing && isHittingMA50 && isHammerBuy50;
-    bool conditionDowntrend50 = isDowntrend && isMAsDecreasing && isHittingMA50 && isHammerSell50;
+    bool conditionUptrend20 = isConditionMetUptrend && isHittingMA20 && isHammerBuy20;
+    bool conditionUptrend50 = isConditionMetUptrend && isHittingMA50 && isHammerBuy50;
+    bool conditionDowntrend20 = isConditionMetDowntrend && isHittingMA20 && isHammerSell20;
+    bool conditionDowntrend50 = isConditionMetDowntrend && isHittingMA50 && isHammerSell50;
 
     if(conditionUptrend20 || conditionUptrend50) {
       Buffer1[i] = Low[1+i];
