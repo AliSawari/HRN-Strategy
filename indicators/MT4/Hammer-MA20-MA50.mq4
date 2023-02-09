@@ -123,6 +123,7 @@ int OnCalculate(const int rates_total,
 
 
     // is Hammer Pattern  Buy
+    bool isPrevBear = Close[i+2] < Open[i+2];
     float upperShadowB = High[i+1] - MathMax(Open[i+1], Close[i+1]);
     float bodyLengthB = MathAbs(Close[i+1] - Open[i+1]);
     float lowerShadowB = MathMin(Open[i+1], Close[i+1]) - Low[i+1];
@@ -137,10 +138,11 @@ int OnCalculate(const int rates_total,
     bool isFiftyPercentBelowMA50 = (Low[i+1] + ( 0.5 * lowerShadowB )) <= MA50_1;
     bool isCloseAboveMA20 = MathMax(Open[i+1], Close[i+1]) >= MA20_1;
     bool isCloseAboveMA50 = MathMax(Open[i+1], Close[i+1]) >= MA50_1;
-    bool isHammerPatternBuy = isBodyBiggerThanUpperShadow && isLowerShadowTwiceTheBody && isShadowTrailingBelow && isPrevNotHammerB;
+    bool isHammerPatternBuy = isPrevBear && isBodyBiggerThanUpperShadow && isLowerShadowTwiceTheBody && isShadowTrailingBelow && isPrevNotHammerB;
     bool isHammerBuy20 = isHammerPatternBuy && isCloseAboveMA20 && isFiftyPercentBelowMA20;
     bool isHammerBuy50 = isHammerPatternBuy && isCloseAboveMA50 && isFiftyPercentBelowMA50;
     // is Hammer Pattern  Sell
+    bool isPrevBull = Close[i+2] > Open[i+2];
     float upperShadowS = High[i+1] - MathMax(Open[i+1], Close[i+1]);
     float bodyLengthS = MathAbs(Close[i+1] - Open[i+1]);
     float lowerShadowS = MathMin(Open[i+1], Close[i+1]) - Low[i+1];
@@ -155,7 +157,7 @@ int OnCalculate(const int rates_total,
     bool isFiftyPercentAboveMA50 = (High[i+1] - (0.5 * upperShadowS)) >= MA50_1;
     bool isCloseBelowMA20 = MathMin(Open[i+1], Close[i+1]) <= MA20_1;
     bool isCloseBelowMA50 = MathMin(Open[i+1], Close[i+1]) <= MA50_1;
-    bool isHammerPatternSell = isBodyBiggerThanLowerShadow && isUpperShadowTwiceTheBody && isShadowTrailingAbove && isPrevNotHammerS;
+    bool isHammerPatternSell = isPrevBull && isBodyBiggerThanLowerShadow && isUpperShadowTwiceTheBody && isShadowTrailingAbove && isPrevNotHammerS;
     bool isHammerSell20 = isHammerPatternSell && isCloseBelowMA20 && isFiftyPercentAboveMA20;
     bool isHammerSell50 = isHammerPatternSell && isCloseBelowMA50 && isFiftyPercentAboveMA50;
 
