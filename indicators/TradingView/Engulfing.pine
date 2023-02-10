@@ -70,7 +70,7 @@ isCloseAbove8 = close > ma8
 isCloseAbove20 = close > ma20
 isCloseAbove50 = close > ma50
 isEngulfingBuyPattern = isPrevBear and isCurrentBull and isEngulfingBodyB and isEngulfingShadow and isUpperShadowsSmallerThanBodies
-isEngulfingBuy8 = isEngulfingBuyPattern and isCloseAbove20
+isEngulfingBuy8 = isEngulfingBuyPattern and isCloseAbove8
 isEngulfingBuy20 = isEngulfingBuyPattern and isCloseAbove20
 isEngulfingBuy50 = isEngulfingBuyPattern and isCloseAbove50
 
