@@ -54,7 +54,7 @@ string getCorrectMSG(bool uptrend, int context){
     }
 
     return msg;
-  }
+}
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -118,15 +118,17 @@ int OnCalculate(const int rates_total,
     float MA48_1 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+1);
     float MA48_2 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+2);
     // MA comparison & RSI Validation
-    bool isUptrend = MA20_1 > MA50_1 && MA20_2 > MA50_2;
-    bool isDowntrend =  MA20_1 < MA50_1 && MA20_2 < MA50_2;
+    bool isUptrend = MA8_1 > MA20_1 && MA20_1 > MA50_1 && MA8_2 > MA20_2 && MA20_2 > MA50_2;
+    bool isUptrendFor50 = MA20_1 > MA50_1 && MA20_2 > MA50_2;
+    bool isDowntrend = MA8_1 < MA20_1 && MA20_1 < MA50_1 && MA8_2 < MA20_2 && MA20_2 < MA50_2;
+    bool isDowntrendFor50 = MA20_1 < MA50_1 && MA20_2 < MA50_2;
     bool RSIValidationUptrend = RSI < 70;
     bool RSIValidationDowntrend = RSI > 30;
     // MAs increasing in value
-    // bool isMA8sIncreasing = MA8_1 > MA8_2;
-    // bool isMA8Decreasing  = MA8_1 < MA8_2;
-    bool isMAsIncreasing = MA20_1 > MA20_2 && MA50_1 > MA50_2;
-    bool isMAsDecreasing = MA20_1 < MA20_2 && MA50_1 < MA50_2;
+    bool isMAsIncreasing = MA8_1 > MA8_2 && MA20_1 > MA20_2 && MA50_1 > MA50_2;
+    bool isMAsIncreasingFor50 = MA20_1 > MA20_2 && MA50_1 > MA50_2;
+    bool isMAsDecreasing = MA8_1 < MA8_2 && MA20_1 < MA20_2 && MA50_1 < MA50_2;
+    bool isMAsDecreasingFor50 = MA20_1 < MA20_2 && MA50_1 < MA50_2;
     // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
     bool isHitting1 = (MA8_1 <= High[i+1] && MA8_1 >= Low[i+1]) || (MA7_1 <= High[i+1] && MA7_1 >= Low[i+1]);
     bool isHitting2 = (MA8_2 <= High[i+2] && MA8_2 >= Low[i+2]) || (MA7_2 <= High[i+2] && MA7_2 >= Low[i+2]);
@@ -140,7 +142,9 @@ int OnCalculate(const int rates_total,
 
     // All Indicators Conditions Boolean
     bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend;
+    bool isConditionMetUptrendFor50 = isUptrendFor50 && isMAsIncreasingFor50 && RSIValidationUptrend;
     bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend;
+    bool isConditionMetDowntrendFor50 = isDowntrendFor50 && isMAsDecreasingFor50 && RSIValidationDowntrend;
 
     // is Engulfing Pattern Buy
     bool isPrevBear = Open[i+2] > Close[i+2];
@@ -180,10 +184,10 @@ int OnCalculate(const int rates_total,
     // final conditions
     bool conditionUptrend8 = isConditionMetUptrend && isHittingMA8 && isEngulfingBuy8;
     bool conditionUptrend20 = isConditionMetUptrend && isHittingMA20 && isEngulfingBuy20;
-    bool conditionUptrend50 = isConditionMetUptrend && isHittingMA50 && isEngulfingBuy50;
+    bool conditionUptrend50 = isConditionMetUptrendFor50 && isHittingMA50 && isEngulfingBuy50;
     bool conditionDowntrend8 = isConditionMetDowntrend && isHittingMA8 && isEngulfingSell8;
     bool conditionDowntrend20 = isConditionMetDowntrend && isHittingMA20 && isEngulfingSell20;
-    bool conditionDowntrend50 = isConditionMetDowntrend && isHittingMA50 && isEngulfingSell50;
+    bool conditionDowntrend50 = isConditionMetDowntrendFor50 && isHittingMA50 && isEngulfingSell50;
 
     bool conditionUptrend = conditionUptrend8 || conditionUptrend20 || conditionUptrend50;
     bool conditionDowntrend = conditionDowntrend8 || conditionDowntrend20 || conditionDowntrend50;
@@ -201,7 +205,7 @@ int OnCalculate(const int rates_total,
     } else Buffer1[i] = EMPTY_VALUE;
     
     if(conditionDowntrend){
-      Buffer2[i] = Low[1+i];
+      Buffer2[i] = High[1+i];
       string msgSell = getCorrectMSG(false, currentContext);
       if(i == 0 && Time[0] != time_alert) myAlert("indicator", msgSell); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
