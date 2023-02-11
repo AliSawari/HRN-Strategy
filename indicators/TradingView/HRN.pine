@@ -1,7 +1,7 @@
 // Author: @AliSawari 2023ma50[1]ma7[1]
 
 //@version=5
-indicator("Engulfing", shorttitle = "Engulfing", overlay=true)
+indicator("HRN", shorttitle = "HRN", overlay=true)
 
 // MA, RSI, MACD, ATR
 ma8 = ta.sma(close, 8)
@@ -33,13 +33,16 @@ isMAsDecreasingFor50 = ma20 < ma20[1] and ma50 < ma50[1]
 // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
 isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
 isHitting2 = (ma8[1] <= high[1] and ma8[1] >= low[1]) or (ma7[1] <= high[1] and ma7[1] >= low[1])
-isHittingMA8 = isHitting1 or isHitting2
-isHitting3 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
-isHitting4 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
-isHittingMA20 = isHitting3 or isHitting4
-isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
-isHitting6 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
-isHittingMA50 = isHitting5 or isHitting6
+isHitting3 = (ma8[2] <= high[2] and ma8[2] >= low[2]) or (ma7[2] <= high[2] and ma7[2] >= low[2])
+isHittingMA8 = isHitting1 or isHitting2 or isHitting3
+isHitting4 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
+isHitting5 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
+isHitting6 = (ma20[2] <= high[2] and ma20[2] >= low[2]) or (ma19[2] <= high[2] and ma19[2] >= low[2])
+isHittingMA20 = isHitting4 or isHitting5 or isHitting6
+isHitting7 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
+isHitting8 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
+isHitting9 = (ma50[2] <= high[2] and ma50[2] >= low[2]) or (ma49[2] <= high[2] and ma49[2] >= low[2])
+isHittingMA50 = isHitting7 or isHitting8 or isHitting9
 
 // calculate X,Y
 isThereRoomToBreathe(upt) => 
@@ -77,46 +80,55 @@ isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecre
 isConditionsMetUptrendFor50 = isUptrendFor50 and RSIValidationUptrend  and isMAsIncreasingFor50 and isThereRoomToBreathe(true)
 isConditionsMetDowntrendFor50 = isDowntrendFor50 and RSIValidationDowntrend and isMAsDecreasingFor50 and isThereRoomToBreathe(false)
 
-// is Engulfing Pattern Buy
+// is HRN Pattern Buy
+is3rdBear = open[2] > close[2]
 isPrevBear = open[1] > close[1]
 isCurrentBull = open < close
-isEngulfingBodyB = close > open[1] and open <= close[1]
-isEngulfingShadow = high >= high[1] and low <= low[1]
+isOHCL3BiggerThan2 = math.max(open[2], close[2]) > math.max(open[1],close[1]) and math.min(open[2],close[2]) > math.min(open[1],close[1]) and high[2] > high[1] and low[2] > low[1]
+isHigherClose = close >= math.max(open[1],close[1])
+isHigherOpen = open >= math.min(open[1],close[1])
+isHigherShadow = high >= high[1]
 body1 = math.abs(close - open)
-body2 = math.abs(open[1] - close[1])
+body2 = math.abs(close[1] - open[1])
 upperShadow1 = high - math.max(open, close)
 upperShadow2 = high[1] - math.max(open[1], close[1])
 isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2
 isCloseAbove8 = close > ma8
 isCloseAbove20 = close > ma20
 isCloseAbove50 = close > ma50
-isEngulfingBuyPattern = isPrevBear and isCurrentBull and isEngulfingBodyB and isEngulfingShadow and isUpperShadowsSmallerThanBodies
-isEngulfingBuy8 = isEngulfingBuyPattern and isCloseAbove8
-isEngulfingBuy20 = isEngulfingBuyPattern and isCloseAbove20
-isEngulfingBuy50 = isEngulfingBuyPattern and isCloseAbove50
+isHRNBuyPattern = is3rdBear and isPrevBear and isCurrentBull and isOHCL3BiggerThan2 and isHigherClose and isHigherOpen and isHigherShadow and isUpperShadowsSmallerThanBodies
+isHRNBuy8 = isHRNBuyPattern and isCloseAbove8
+isHRNBuy20 = isHRNBuyPattern and isCloseAbove20
+isHRNBuy50 = isHRNBuyPattern and isCloseAbove50
 
-// is Engulfing Pattern Sell
-isPrevBull = open[1] < close[1]  
+// is HRN Pattern Sell
+is3rdBull = open[2] < close[2]
+isPrevBull = open[1] < close[1]
 isCurrentBear = open > close
-isEngulfingBodyS = close < open[1] and open >= close[1]
+isOHCL3LowerThan2 = math.max(open[2], close[2]) < math.max(open[1],close[1]) and math.min(open[2],close[2]) < math.min(open[1],close[1]) and high[2] < high[1] and low[2] < low[1]
+isLowerClose = close <= math.min(open[1],close[1])
+isLowerOpen = open <= math.max(open[1],close[1])
+isLowerShadow = low <= low[1]
+body1S = math.abs(close - open)
+body2S = math.abs(close[1] - open[1])
 lowerShadow1 = math.min(open, close) - low
 lowerShadow2 = math.min(open[1], close[1]) - low[1]
-isLowerShadowsSmallerThanBodies = lowerShadow1 < body1 and lowerShadow2 < body2
-isCloseBelowMA8 = close < ma8
-isCloseBelowMA20 = close < ma20
-isCloseBelowMA50 = close < ma50
-isEngulfingSellPattern = isPrevBull and isCurrentBear and isEngulfingBodyS and isEngulfingShadow and isLowerShadowsSmallerThanBodies
-isEngulfingSell8 = isEngulfingSellPattern and isCloseBelowMA8
-isEngulfingSell20 = isEngulfingSellPattern and isCloseBelowMA20
-isEngulfingSell50 = isEngulfingSellPattern and isCloseBelowMA50
+isLowerShadowsSmallerThanBodies = lowerShadow1 < body1S and lowerShadow2 < body2S
+isCloseBelow8 = close < ma8
+isCloseBelow20 = close < ma20
+isCloseBelow50 = close < ma50
+isHRNSellPattern = is3rdBull and isPrevBull and isCurrentBear and isOHCL3LowerThan2 and isLowerClose and isLowerOpen and isLowerShadow and isLowerShadowsSmallerThanBodies
+isHRNSell8 = isHRNSellPattern and isCloseBelow8
+isHRNSell20 = isHRNSellPattern and isCloseBelow20
+isHRNSell50 = isHRNSellPattern and isCloseBelow50
 
 // final conditions
-conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isEngulfingBuy8
-conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isEngulfingBuy20
-conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isEngulfingBuy50
-conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isEngulfingSell8
-conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isEngulfingSell20
-conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isEngulfingSell50
+conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isHRNBuy8
+conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isHRNBuy20
+conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isHRNBuy50
+conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isHRNSell8
+conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isHRNSell20
+conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isHRNSell50
 
 conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
 conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
@@ -128,8 +140,10 @@ labelColorSell = input(color.red, "Label Color Bearish")
 labelColorBuy = input(color.blue, "Label Color Bullish")
 bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
 bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
+bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -2)
 bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
 bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
+bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -2)
 plot(ma8, color = color.red)
 plot(ma20, color = color.blue)
 plot(ma50, color = color.black)
@@ -138,14 +152,14 @@ getCorrectMSG(type, uptrend, context) =>
     msg = ""
     if type == "text"
         msg := if uptrend
-            "BE" + context
+            "B-HRN" + context
         else
-            "SE" + context
+            "S-HRN" + context
     if type == "tooltip"
         msg := if uptrend
-            "Buy Engulfing MA" + context
+            "Buy HRN MA" + context
         else
-            "Sell Engulfing MA" + context
+            "Sell HRN MA" + context
     
     msg
 
