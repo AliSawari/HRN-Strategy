@@ -176,7 +176,7 @@ int OnCalculate(const int rates_total,
     bool isHRNBuy20 = isHRNBuyPattern && isCloseAbove20;
     bool isHRNBuy50 = isHRNBuyPattern && isCloseAbove50;
 
-     // is HRN Pattern Buy
+     // is HRN Pattern Sell
     bool is3rdBull = Open[i+3] < Close[i+3];
     bool isPrevBull = Open[i+2] < Close[i+2];
     bool isCurrentBear = Open[i+1] > Close[i+1];
