@@ -4,16 +4,28 @@
 indicator("HRN", shorttitle = "HRN", overlay=true)
 
 // MA, RSI, MACD, ATR
-ma8 = ta.sma(close, 8)
-ma20 = ta.sma(close, 20)
-ma50 = ta.sma(close, 50)
+MA1 = input(8, "MA1")
+MA2 = input(20, "MA2")
+MA3 = input(50, "MA3")
+
+MA_offset = input(1, "MA Offset for Pullback Detection", "Used to replicate the same calculation with a slight offset")
+
+ma8 = ta.sma(close, MA1)
+ma20 = ta.sma(close, MA2)
+ma50 = ta.sma(close, MA3)
 rsi = ta.rsi(close, 14)
 // [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
 // atr = ta.atr(14)
 // MA for pullback approximation
-ma7 = ta.sma(close, 7)
-ma19 = ta.sma(close, 19)
-ma49 = ta.sma(close, 49)
+ma7 = ta.sma(close, MA1 - MA_offset)
+ma19 = ta.sma(close, MA2 - MA_offset)
+ma49 = ta.sma(close, MA3 - MA_offset)
+
+// X,Y comparison factor
+XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.1) Y for a position to be valid")
+XLookBack = input(10, "Bar count back for finding X")
+YLookBack = input(3, "Bar count back for finding Y")
+
 
 isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1])
 isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1])
@@ -49,23 +61,23 @@ isThereRoomToBreathe(upt) =>
     isThereRoom = false
     
     X = if upt
-        ta.highest(high, 10) - close
+        ta.highest(high, XLookBack) - close
     else
-        close - ta.lowest(low, 10)
+        close - ta.lowest(low, XLookBack)
 
     Y = if upt
-        close - ta.lowest(low, 3)
+        close - ta.lowest(low, YLookBack)
     else
-        ta.highest(high, 3) - close
+        ta.highest(high, YLookBack) - close
 
     isAlreadyHit = if upt 
-        ta.highest(high, 10) == high
+        ta.highest(high, XLookBack) == high
     else
-        ta.lowest(low, 10) == low
+        ta.lowest(low, XLookBack) == low
 
     if isAlreadyHit
         isThereRoom := false
-    else if X < Y and (X >= (0.1 * Y))
+    else if X < Y and (X >= (XYFactor * Y))
         isThereRoom := true
     else if X > Y
         isThereRoom := true
@@ -133,43 +145,54 @@ conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isHRN
 conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
 conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
 
+
 // styling
 labelPositionBuy = low - (ta.atr(30) * 0.6)
 labelPositionSell = high + (ta.atr(30) * 0.6)
-labelColorSell = input(color.red, "Label Color Bearish")
-labelColorBuy = input(color.blue, "Label Color Bullish")
-bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
-bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
-bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -2)
-bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
-bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
-bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -2)
-plot(ma8, color = color.red)
-plot(ma20, color = color.blue)
-plot(ma50, color = color.black)
+labelColorBuy = input(color.blue, "Label Color Buy")
+labelColorSell = input(color.red, "Label Color Sell")
+labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
+labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
+MA1_color = input(color.red, "MA1 Color")
+MA2_color = input(color.blue, "MA2 Color")
+MA3_color = input(color.gray, "MA3 Color")
+bgcolor(conditionUptrend ? labelColorBuyBG : na, 0)
+bgcolor(conditionUptrend ? labelColorBuyBG : na, -1)
+bgcolor(conditionUptrend ? labelColorBuyBG : na, -2)
+bgcolor(conditionDowntrend ? labelColorSellBG : na, 0)
+bgcolor(conditionDowntrend ? labelColorSellBG : na, -1)
+bgcolor(conditionDowntrend ? labelColorSellBG : na, -2)
+plot(ma8, color = MA1_color)
+plot(ma20, color = MA2_color)
+plot(ma50, color = MA3_color)
+labelTextBuy = input("B-HRN", "Label Text for Buy indicator")
+labelTextSell = input("S-HRN", "Label Text for Sell indicator")
+labelTooltipBuy = input("Buy HRN MA", "Label Tooltip Text for Buy indicator")
+labelTooltipSell = input("Sell HRN MA", "Label Tooltip Text for Sell indicator")
+
 
 getCorrectMSG(type, uptrend, context) =>
     msg = ""
     if type == "text"
         msg := if uptrend
-            "B-HRN" + context
+            labelTextBuy + context
         else
-            "S-HRN" + context
+            labelTextSell + context
     if type == "tooltip"
         msg := if uptrend
-            "Buy HRN MA" + context
+            labelTooltipBuy + context
         else
-            "Sell HRN MA" + context
+            labelTooltipSell + context
     
     msg
 
 
 context = if (conditionUptrend8 or conditionDowntrend8)
-    "8"
+    str.tostring(MA1)
 else if (conditionUptrend20 or conditionDowntrend20)
-    "20"
+    str.tostring(MA2)
 else if (conditionUptrend50 or conditionDowntrend50)
-    "50"
+    str.tostring(MA3)
 
 
 // main
