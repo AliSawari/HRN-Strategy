@@ -1,0 +1,353 @@
+//@version=5
+
+strategy("MA Pullback Strategy", overlay=true,
+     currency="USD",
+     calc_on_order_fills=true,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=100,
+     commission_type=strategy.commission.cash_per_contract)
+
+
+
+// MA, RSI, MACD, ATR
+MA1 = input(8, "MA1")
+MA2 = input(20, "MA2")
+MA3 = input(50, "MA3")
+
+MA_offset = input(1, "MA Offset for Pullback Detection", "Used to replicate the same calculation with a slight offset")
+
+ma8 = ta.sma(close, MA1)
+ma20 = ta.sma(close, MA2)
+ma50 = ta.sma(close, MA3)
+rsi = ta.rsi(close, 14)
+// [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+atr = ta.atr(14)
+// MA for pullback approximation
+ma7 = ta.sma(close, MA1 - MA_offset)
+ma19 = ta.sma(close, MA2 - MA_offset)
+ma49 = ta.sma(close, MA3 - MA_offset)
+
+// X,Y comparison factor
+XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.1) Y for a position to be valid")
+XYMultiplier = input(2, "Value to multiply into Y when X is bigger than Y")
+XLookBack = input(10, "Bar count back for finding X")
+YLookBack = input(3, "Bar count back for finding Y")
+
+
+isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1])
+isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1])
+isDowntrend = (ma8 < ma20) and (ma20 < ma50) and (ma8[1] < ma20[1]) and (ma20[1] < ma50[1])
+isDowntrendFor50 = (ma20 < ma50) and (ma20[1] < ma50[1])
+
+RSIValidationUptrend = rsi < 70 
+RSIValidationDowntrend = rsi > 30
+
+// MAs increasing in value
+isMAsIncreasing = ma8 > ma8[1] and ma20 > ma20[1] and ma50 > ma50[1]
+isMAsIncreasingFor50 = ma20 > ma20[1] and ma50 > ma50[1]
+// MAs decreasing in value
+isMAsDecreasing = ma8 < ma8[1] and ma20 < ma20[1] and ma50 < ma50[1]
+isMAsDecreasingFor50 = ma20 < ma20[1] and ma50 < ma50[1]
+
+// is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
+isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
+isHitting2 = (ma8[1] <= high[1] and ma8[1] >= low[1]) or (ma7[1] <= high[1] and ma7[1] >= low[1])
+isHittingMA8 = isHitting1 or isHitting2
+isHitting3 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
+isHitting4 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
+isHittingMA20 = isHitting3 or isHitting4
+isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
+isHitting6 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
+isHittingMA50 = isHitting5 or isHitting6
+
+
+calcX_Y(upt) =>
+	X = if upt
+        ta.highest(high, XLookBack) - close
+    else
+        close - ta.lowest(low, XLookBack)
+
+    Y = if upt
+        close - ta.lowest(low, YLookBack)
+    else
+        ta.highest(high, YLookBack) - close
+
+	[X, Y]
+
+
+// calculate X,Y
+isThereRoomToBreathe(upt) => 
+    isThereRoom = false
+	
+	[X, Y] = calcX_Y(upt)
+
+    isAlreadyHit = if upt 
+        ta.highest(high, XLookBack) == high
+    else
+        ta.lowest(low, XLookBack) == low
+
+    if isAlreadyHit
+        isThereRoom := false
+    else if X < Y and (X >= (XYFactor * Y))
+        isThereRoom := true
+    else if X > Y
+        isThereRoom := true
+
+    isThereRoom
+
+
+calcTPANDSL(upt) =>
+	float TP = na
+	float SL = na
+	[X, Y] = calcX_Y(upt)
+
+	if X < Y and (X >= (XYFactor * Y))
+		if upt
+			TP := close + Y
+			SL := close - Y
+		else
+			TP := close - Y
+			SL := close + Y
+	else if X > Y
+		limit = if X <= (XYMultiplier * Y)
+			X
+		else
+			(XYMultiplier * Y)
+
+		if upt
+			TP := close + limit
+			SL := close - limit
+		else
+			TP := close - limit
+			SL := close + limit
+
+	[TP, SL]
+
+
+// if conditions met for Indicator Values
+isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing and isThereRoomToBreathe(true)
+isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing and isThereRoomToBreathe(false)
+
+isConditionsMetUptrendFor50 = isUptrendFor50 and RSIValidationUptrend  and isMAsIncreasingFor50 and isThereRoomToBreathe(true)
+isConditionsMetDowntrendFor50 = isDowntrendFor50 and RSIValidationDowntrend and isMAsDecreasingFor50 and isThereRoomToBreathe(false)
+
+isEngulfingBuy() => 
+    // is Engulfing Pattern Buy
+    isPrevBear = open[1] > close[1]
+    isCurrentBull = open < close
+    isEngulfingBodyB = close > open[1] and open <= close[1]
+    isEngulfingShadow = high >= high[1] and low <= low[1]
+    body1 = math.abs(close - open)
+    body2 = math.abs(open[1] - close[1])
+    upperShadow1 = high - math.max(open, close)
+    upperShadow2 = high[1] - math.max(open[1], close[1])
+    isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2
+    isCloseAbove8 = close > ma8
+    isCloseAbove20 = close > ma20
+    isCloseAbove50 = close > ma50
+    isEngulfingBuyPattern = isPrevBear and isCurrentBull and isEngulfingBodyB and isEngulfingShadow and isUpperShadowsSmallerThanBodies
+    isEngulfingBuy8 = isEngulfingBuyPattern and isCloseAbove8
+    isEngulfingBuy20 = isEngulfingBuyPattern and isCloseAbove20
+    isEngulfingBuy50 = isEngulfingBuyPattern and isCloseAbove50
+	// Engulfing Buy
+	conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isEngulfingBuy8
+	conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isEngulfingBuy20
+	conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isEngulfingBuy50
+	conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
+	conditionUptrend
+
+
+
+isEngulfingSell() =>
+    // is Engulfing Pattern Sell
+    isPrevBull = open[1] < close[1]  
+    isCurrentBear = open > close
+    isEngulfingBodyS = close < open[1] and open >= close[1]
+    lowerShadow1 = math.min(open, close) - low
+    lowerShadow2 = math.min(open[1], close[1]) - low[1]
+	body1 = math.abs(close - open)
+    body2 = math.abs(open[1] - close[1])
+	isEngulfingShadow = high >= high[1] and low <= low[1]
+    isLowerShadowsSmallerThanBodies = lowerShadow1 < body1 and lowerShadow2 < body2
+    isCloseBelowMA8 = close < ma8
+    isCloseBelowMA20 = close < ma20
+    isCloseBelowMA50 = close < ma50
+    isEngulfingSellPattern = isPrevBull and isCurrentBear and isEngulfingBodyS and isEngulfingShadow and isLowerShadowsSmallerThanBodies
+    isEngulfingSell8 = isEngulfingSellPattern and isCloseBelowMA8
+    isEngulfingSell20 = isEngulfingSellPattern and isCloseBelowMA20
+    isEngulfingSell50 = isEngulfingSellPattern and isCloseBelowMA50
+	// Engulfing Sell
+	conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isEngulfingSell8
+	conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isEngulfingSell20
+	conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isEngulfingSell50
+	conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
+	conditionDowntrend
+
+
+isHRNBuy() =>
+	// is HRN Pattern Buy
+	is3rdBear = open[2] > close[2]
+	isPrevBear = open[1] > close[1]
+	isCurrentBull = open < close
+	isOHCL3BiggerThan2 = math.max(open[2], close[2]) > math.max(open[1],close[1]) and math.min(open[2],close[2]) > math.min(open[1],close[1]) and high[2] > high[1] and low[2] > low[1]
+	isHigherClose = close >= math.max(open[1],close[1])
+	isHigherOpen = open >= math.min(open[1],close[1])
+	isHigherShadow = high >= high[1]
+	body1 = math.abs(close - open)
+	body2 = math.abs(close[1] - open[1])
+	upperShadow1 = high - math.max(open, close)
+	upperShadow2 = high[1] - math.max(open[1], close[1])
+	isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2
+	isCloseAbove8 = close > ma8
+	isCloseAbove20 = close > ma20
+	isCloseAbove50 = close > ma50
+	isHRNBuyPattern = is3rdBear and isPrevBear and isCurrentBull and isOHCL3BiggerThan2 and isHigherClose and isHigherOpen and isHigherShadow and isUpperShadowsSmallerThanBodies
+	isHRNBuy8 = isHRNBuyPattern and isCloseAbove8
+	isHRNBuy20 = isHRNBuyPattern and isCloseAbove20
+	isHRNBuy50 = isHRNBuyPattern and isCloseAbove50
+
+	// HRN Buy
+	conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isHRNBuy8
+	conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isHRNBuy20
+	conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isHRNBuy50
+	conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
+	conditionUptrend
+	
+
+isHRNSell() =>
+	// is HRN Pattern Sell
+	is3rdBull = open[2] < close[2]
+	isPrevBull = open[1] < close[1]
+	isCurrentBear = open > close
+	isOHCL3LowerThan2 = math.max(open[2], close[2]) < math.max(open[1],close[1]) and math.min(open[2],close[2]) < math.min(open[1],close[1]) and high[2] < high[1] and low[2] < low[1]
+	isLowerClose = close <= math.min(open[1],close[1])
+	isLowerOpen = open <= math.max(open[1],close[1])
+	isLowerShadow = low <= low[1]
+	body1S = math.abs(close - open)
+	body2S = math.abs(close[1] - open[1])
+	lowerShadow1 = math.min(open, close) - low
+	lowerShadow2 = math.min(open[1], close[1]) - low[1]
+	isLowerShadowsSmallerThanBodies = lowerShadow1 < body1S and lowerShadow2 < body2S
+	isCloseBelow8 = close < ma8
+	isCloseBelow20 = close < ma20
+	isCloseBelow50 = close < ma50
+	isHRNSellPattern = is3rdBull and isPrevBull and isCurrentBear and isOHCL3LowerThan2 and isLowerClose and isLowerOpen and isLowerShadow and isLowerShadowsSmallerThanBodies
+	isHRNSell8 = isHRNSellPattern and isCloseBelow8
+	isHRNSell20 = isHRNSellPattern and isCloseBelow20
+	isHRNSell50 = isHRNSellPattern and isCloseBelow50
+	// HRN Sell
+	conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isHRNSell8
+	conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isHRNSell20
+	conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isHRNSell50
+	conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
+	conditionDowntrend
+
+
+isHammerBuy() =>
+	// Hammer Buy Pattern
+	isPrevBear = open[1] > close[1]
+	upperShadowB = high - math.max(open, close)
+	bodyLengthB = math.abs(close - open)
+	lowerShadowB = math.min(open, close) - low
+	prevUpperShadow = high[1] - math.max(open[1], close[1])
+	prevBodyLengthB = math.abs(close[1] - open[1])
+	isBodyBiggerThanUpperShadow = bodyLengthB >= upperShadowB
+	isLowerShadowTwiceTheBody = lowerShadowB >= 2 * bodyLengthB
+	isCloseLowerThan = math.max(open, close) < math.max(open[1], close[1])
+	isShadowTrailingBelow = low < low[1]
+	isPrevNotHammerB = prevBodyLengthB * 2 >= prevUpperShadow
+	isFiftyPercentBelowMA8 = (low + (0.5 * lowerShadowB)) <= ma8
+	isFiftyPercentBelowMA20 = (low + (0.5 * lowerShadowB)) <= ma20
+	isFiftyPercentBelowMA50 = (low + (0.5 * lowerShadowB)) <= ma50
+	isCloseAboveMA8 = math.max(open, close) >= ma8
+	isCloseAboveMA20 = math.max(open, close) >= ma20
+	isCloseAboveMA50 = math.max(open, close) >= ma50
+	isHammerBuyPattern = isPrevBear and isBodyBiggerThanUpperShadow and isLowerShadowTwiceTheBody and isShadowTrailingBelow and isPrevNotHammerB
+	isHammerBuy8 = isHammerBuyPattern and isCloseAboveMA8 and isFiftyPercentBelowMA8
+	isHammerBuy20 = isHammerBuyPattern and isCloseAboveMA20 and isFiftyPercentBelowMA20
+	isHammerBuy50 = isHammerBuyPattern and isCloseAboveMA50 and isFiftyPercentBelowMA50
+	// Hammer Buy
+	conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and isHammerBuy8
+	conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and isHammerBuy20
+	conditionUptrend50 = isConditionsMetUptrendFor50 and isHittingMA50 and isHammerBuy50
+	conditionUptrend = conditionUptrend8 or conditionUptrend20 or conditionUptrend50
+	conditionUptrend
+
+
+
+isHammerSell() =>
+	// Hammer Sell Pattern
+	isPrevBull = open[1] < close[1]
+	upperShadowS = high - math.max(open, close)
+	bodyLengthS = math.abs(close - open)
+	lowerShadowS = math.min(open, close) - low
+	prevLowerShadow = math.min(open[1], close[1]) - low[1]
+	prevBodyLengthS = math.abs(close[1] - open[1])
+	isBodyBiggerThanLowerShadow = bodyLengthS >= lowerShadowS
+	isUpperShadowTwiceTheBody = upperShadowS >= 2 * bodyLengthS
+	isCloseAboveThan = math.min(open, close) > math.min(open[1], close[1])
+	isShadowTrailingAbove = high > high[1]
+	isPrevNotHammerS = prevBodyLengthS * 2 >= prevLowerShadow
+	isCloseBelowMA8 = math.min(open, close) <= ma8
+	isCloseBelowMA20 = math.min(open, close) <= ma20
+	isCloseBelowMA50 = math.min(open, close) <= ma50
+	isFiftyPercentAboveMA8 = (high - (0.5 * upperShadowS)) >= ma8
+	isFiftyPercentAboveMA20 = (high - (0.5 * upperShadowS)) >= ma20
+	isFiftyPercentAboveMA50 = (high - (0.5 * upperShadowS)) >= ma50
+	isHammerSellPattern = isPrevBull and isBodyBiggerThanLowerShadow and isUpperShadowTwiceTheBody and isShadowTrailingAbove and isPrevNotHammerS 
+	isHammerSell8 = isHammerSellPattern and isCloseBelowMA8 and isFiftyPercentAboveMA8
+	isHammerSell20 = isHammerSellPattern and isCloseBelowMA20 and isFiftyPercentAboveMA20
+	isHammerSell50 = isHammerSellPattern and isCloseBelowMA50 and isFiftyPercentAboveMA50
+	// Hammer Sell
+	conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and isHammerSell8
+	conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and isHammerSell20
+	conditionDowntrend50 = isConditionsMetDowntrendFor50 and isHittingMA50 and isHammerSell50
+	conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 or conditionDowntrend50
+	conditionDowntrend
+
+
+
+longCondition = isEngulfingBuy() or isHRNBuy() or isHammerBuy()
+shortCondition = isEngulfingSell() or isHRNSell() or isHammerSell()
+
+notInTrade = strategy.position_size <= 0
+
+
+float TP_LINE = na
+float SL_LINE = na
+
+
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+labelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorBuy = input(color.blue, "Label Color Buy")
+labelColorSell = input(color.red, "Label Color Sell")
+labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
+labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
+MA1_color = input(color.red, "MA1 Color")
+MA2_color = input(color.blue, "MA2 Color")
+MA3_color = input(color.gray, "MA3 Color")
+
+plot(ma8, color = MA1_color)
+plot(ma20, color = MA2_color)
+plot(ma50, color = MA3_color)
+
+
+[TPBuy, SLBuy] = calcTPANDSL(true)
+[TPSell, SLSell] = calcTPANDSL(false)
+
+if longCondition and notInTrade
+	strategy.entry(id="Long", direction=strategy.long)
+	strategy.exit(id="Long Exit",  from_entry="Long",  limit=TPBuy, stop=SLBuy)
+    label.new(bar_index,labelPositionBuy,text = "B" ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy Pattern")
+else if shortCondition and notInTrade
+	strategy.entry(id="Short", direction=strategy.short)
+	strategy.exit(id="Long Exit",  from_entry="Short",  limit=TPSell, stop=SLSell)
+	label.new(bar_index,labelPositionSell,text = "S" ,style = label.style_label_down, color = labelColorSell, textcolor = color.white, tooltip = "Sell Pattern")
+
+plot(longCondition ? TPBuy : na, color = color.green)
+plot(longCondition ? SLBuy : na, color = color.red)
+
+plot(shortCondition ? TPSell : na, color = color.navy)
+plot(shortCondition ? SLSell : na, color = color.purple)
