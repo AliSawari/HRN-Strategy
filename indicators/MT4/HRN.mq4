@@ -54,7 +54,7 @@ string getCorrectMSG(bool uptrend, int context){
     }
 
     return msg;
-  }
+}
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
