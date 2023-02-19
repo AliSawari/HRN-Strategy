@@ -22,44 +22,70 @@ ma20 = ta.sma(close, MA2)
 ma50 = ta.sma(close, MA3)
 rsi = ta.rsi(close, 14)
 // [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
-atr = ta.atr(14)
+atr = ta.atr(input(14))
+atrDelay = input(1, "ATR Limit dealy")
+atrMultiplier = input(1.0, "ATR Limit multiplier")
+
+TP_Multiplier = input(0.1)
+
 // MA for pullback approximation
 ma7 = ta.sma(close, MA1 - MA_offset)
 ma19 = ta.sma(close, MA2 - MA_offset)
 ma49 = ta.sma(close, MA3 - MA_offset)
 
 // X,Y comparison factor
-XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.1) Y for a position to be valid")
-XYMultiplier = input(2, "Value to multiply into Y when X is bigger than Y")
+XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.2) Y for a position to be valid")
+XYMultiplier = input(2.0, "Value to multiply into Y when X is bigger than Y")
 XLookBack = input(10, "Bar count back for finding X")
 YLookBack = input(3, "Bar count back for finding Y")
 
 
-isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1])
-isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1])
-isDowntrend = (ma8 < ma20) and (ma20 < ma50) and (ma8[1] < ma20[1]) and (ma20[1] < ma50[1])
-isDowntrendFor50 = (ma20 < ma50) and (ma20[1] < ma50[1])
+isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1]) and (ma8[2] > ma20[2]) and (ma20[2] > ma50[2])
+isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1]) and (ma20[2] > ma50[2])
+isDowntrend = (ma8 < ma20) and (ma20 < ma50) and (ma8[1] < ma20[1]) and (ma20[1] < ma50[1]) and (ma8[2] < ma20[2]) and (ma20[2] < ma50[2])
+isDowntrendFor50 = (ma20 < ma50) and (ma20[1] < ma50[1]) and (ma20[2] < ma50[2])
+
 
 RSIValidationUptrend = rsi < 70 
 RSIValidationDowntrend = rsi > 30
 
 // MAs increasing in value
-isMAsIncreasing = ma8 > ma8[1] and ma20 > ma20[1] and ma50 > ma50[1]
-isMAsIncreasingFor50 = ma20 > ma20[1] and ma50 > ma50[1]
+isMAsIncreasing = ma8 > ma8[1] and ma8[1] > ma8[2] and ma20 > ma20[1] and ma20[1] > ma20[2] and ma50 > ma50[1] and ma50[1] > ma50[2]
+isMAsIncreasingFor50 = ma20 > ma20[1] and ma20[1] > ma20[2] and ma50 > ma50[1] and ma50[1] > ma50[2]
 // MAs decreasing in value
-isMAsDecreasing = ma8 < ma8[1] and ma20 < ma20[1] and ma50 < ma50[1]
-isMAsDecreasingFor50 = ma20 < ma20[1] and ma50 < ma50[1]
+isMAsDecreasing = ma8 < ma8[1] and ma8[1] < ma8[2] and ma20 < ma20[1] and ma20[1] < ma20[2] and ma50 < ma50[1] and ma50[1] < ma50[2]
+isMAsDecreasingFor50 = ma20 < ma20[1] and ma20[1] < ma20[2] and ma50 < ma50[1] and ma50[1] < ma50[2]
+
+
+isHittingMA(i, ma, ma_offset) =>
+	isHitting = ( high[i] >= ma[i] and ma[i] >= low[i]) or (high[i] >= ma_offset[i] and ma_offset[i] >= low[i])
+	isHitting
+
 
 // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
-isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
-isHitting2 = (ma8[1] <= high[1] and ma8[1] >= low[1]) or (ma7[1] <= high[1] and ma7[1] >= low[1])
-isHittingMA8 = isHitting1 or isHitting2
-isHitting3 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
-isHitting4 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
-isHittingMA20 = isHitting3 or isHitting4
-isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
-isHitting6 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
-isHittingMA50 = isHitting5 or isHitting6
+// isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
+// isHitting2 = (ma8[1] <= high[1] and ma8[1] >= low[1]) or (ma7[1] <= high[1] and ma7[1] >= low[1])
+// isHitting3 = (ma8[2] <= high[2] and ma8[2] >= low[2]) or (ma7[2] <= high[2] and ma7[2] >= low[2])
+
+isHittingMA8 = isHittingMA(0, ma8, ma7) or isHittingMA(1, ma8, ma7) or isHittingMA(2, ma8, ma7)
+
+// isHitting4 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
+// isHitting5 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
+// isHitting6 = (ma20[2] <= high[2] and ma20[2] >= low[2]) or (ma19[2] <= high[2] and ma19[2] >= low[2])
+
+isHittingMA20 = isHittingMA(0, ma20, ma19) or isHittingMA(1, ma20, ma19) or isHittingMA(2, ma20, ma19)
+
+// isHitting7 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
+// isHitting8 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
+// isHitting9 = (ma50[2] <= high[2] and ma50[2] >= low[2]) or (ma49[2] <= high[2] and ma49[2] >= low[2])
+
+isHittingMA50 = isHittingMA(0, ma50, ma49) or isHittingMA(1, ma50, ma49) or isHittingMA(2, ma50, ma49)
+
+isNotHittingAllMAs() =>
+    isHittingAll = (isHittingMA8 and isHittingMA20) or (isHittingMA20 and isHittingMA50)
+    not isHittingAll
+
+
 
 
 calcX_Y(upt) =>
@@ -104,11 +130,11 @@ calcTPANDSL(upt) =>
 
 	if X < Y and (X >= (XYFactor * Y))
 		if upt
-			TP := close + Y
-			SL := close - Y
+			TP := close + (Y + (TP_Multiplier * Y))
+			SL := close - (Y - (TP_Multiplier * Y))
 		else
-			TP := close - Y
-			SL := close + Y
+			TP := close - (Y - (TP_Multiplier * Y))
+			SL := close + (Y + (TP_Multiplier * Y))
 	else if X > Y
 		limit = if X <= (XYMultiplier * Y)
 			X
@@ -123,6 +149,25 @@ calcTPANDSL(upt) =>
 			SL := close + limit
 
 	[TP, SL]
+
+
+
+// last 3 candles should not exceed the previous(or delay count ) ATR (high + atr, low - atr) 
+isNotSharpCandle() =>
+	lim1 = (atr[atrDelay] * atrMultiplier)
+	lim2 = (atr[atrDelay + 1] * atrMultiplier)
+	lim3 = (atr[atrDelay + 2] * atrMultiplier)
+	upperLimit1 = high[atrDelay] + lim1
+	lowerLimit1 = low[atrDelay] - lim1
+	upperLimit2 = high[atrDelay + 1] + lim2
+	lowerLimit2 = low[atrDelay + 1] - lim2
+	upperLimit3 = high[atrDelay + 2] + lim3
+	lowerLimit3 = low[atrDelay + 2] - lim3
+
+	isNotSharp = high <= upperLimit1 and low >= lowerLimit1 and high[1] <= upperLimit2 and low[1] >= lowerLimit2 and high[2] <= upperLimit2 and low[2] >= lowerLimit2
+
+	isNotSharp
+
 
 
 // if conditions met for Indicator Values
@@ -253,13 +298,13 @@ isHammerBuy() =>
 	prevUpperShadow = high[1] - math.max(open[1], close[1])
 	prevBodyLengthB = math.abs(close[1] - open[1])
 	isBodyBiggerThanUpperShadow = bodyLengthB >= upperShadowB
-	isLowerShadowTwiceTheBody = lowerShadowB >= 2 * bodyLengthB
+	isLowerShadowTwiceTheBody = lowerShadowB >= 3 * bodyLengthB
 	isCloseLowerThan = math.max(open, close) < math.max(open[1], close[1])
 	isShadowTrailingBelow = low < low[1]
 	isPrevNotHammerB = prevBodyLengthB * 2 >= prevUpperShadow
-	isFiftyPercentBelowMA8 = (low + (0.5 * lowerShadowB)) <= ma8
-	isFiftyPercentBelowMA20 = (low + (0.5 * lowerShadowB)) <= ma20
-	isFiftyPercentBelowMA50 = (low + (0.5 * lowerShadowB)) <= ma50
+	isFiftyPercentBelowMA8 = (low + (0.6 * lowerShadowB)) <= ma8
+	isFiftyPercentBelowMA20 = (low + (0.6 * lowerShadowB)) <= ma20
+	isFiftyPercentBelowMA50 = (low + (0.6 * lowerShadowB)) <= ma50
 	isCloseAboveMA8 = math.max(open, close) >= ma8
 	isCloseAboveMA20 = math.max(open, close) >= ma20
 	isCloseAboveMA50 = math.max(open, close) >= ma50
@@ -285,16 +330,16 @@ isHammerSell() =>
 	prevLowerShadow = math.min(open[1], close[1]) - low[1]
 	prevBodyLengthS = math.abs(close[1] - open[1])
 	isBodyBiggerThanLowerShadow = bodyLengthS >= lowerShadowS
-	isUpperShadowTwiceTheBody = upperShadowS >= 2 * bodyLengthS
+	isUpperShadowTwiceTheBody = upperShadowS >= 3 * bodyLengthS
 	isCloseAboveThan = math.min(open, close) > math.min(open[1], close[1])
 	isShadowTrailingAbove = high > high[1]
 	isPrevNotHammerS = prevBodyLengthS * 2 >= prevLowerShadow
 	isCloseBelowMA8 = math.min(open, close) <= ma8
 	isCloseBelowMA20 = math.min(open, close) <= ma20
 	isCloseBelowMA50 = math.min(open, close) <= ma50
-	isFiftyPercentAboveMA8 = (high - (0.5 * upperShadowS)) >= ma8
-	isFiftyPercentAboveMA20 = (high - (0.5 * upperShadowS)) >= ma20
-	isFiftyPercentAboveMA50 = (high - (0.5 * upperShadowS)) >= ma50
+	isFiftyPercentAboveMA8 = (high - (0.6 * upperShadowS)) >= ma8
+	isFiftyPercentAboveMA20 = (high - (0.6 * upperShadowS)) >= ma20
+	isFiftyPercentAboveMA50 = (high - (0.6 * upperShadowS)) >= ma50
 	isHammerSellPattern = isPrevBull and isBodyBiggerThanLowerShadow and isUpperShadowTwiceTheBody and isShadowTrailingAbove and isPrevNotHammerS 
 	isHammerSell8 = isHammerSellPattern and isCloseBelowMA8 and isFiftyPercentAboveMA8
 	isHammerSell20 = isHammerSellPattern and isCloseBelowMA20 and isFiftyPercentAboveMA20
