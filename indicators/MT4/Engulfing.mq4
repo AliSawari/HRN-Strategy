@@ -24,6 +24,16 @@
 double Buffer1[];
 double Buffer2[];
 
+
+
+// my shit
+extern double XYFactor = 0.1;
+extern int X_LookBack = 10;
+extern int Y_LookBack = 3;
+extern int XYMultiplier = 2;
+
+
+
 datetime time_alert; //used when sending alert
 extern bool Audible_Alerts = true;
 extern bool Push_Notifications = true;
@@ -55,6 +65,85 @@ string getCorrectMSG(bool uptrend, int context){
 
     return msg;
 }
+
+
+bool isDoublesEqual(double number1,double number2) { 
+   if(NormalizeDouble(number1-number2,8)==0) return true;
+   else return false;
+} 
+
+void calcXandY(bool isUpt, int candleIndex, double& results[]){
+  
+  double currentClose = iClose(Symbol(),PERIOD_CURRENT, candleIndex);
+  int xCounter = 0;
+  int yCounter = 0;
+  double xTemp[];
+  double yTemp[];
+  ArrayResize(xTemp, X_LookBack);
+  ArrayResize(yTemp, Y_LookBack);
+  ArrayInitialize(xTemp, EMPTY_VALUE);
+  ArrayInitialize(yTemp, EMPTY_VALUE);
+  
+
+  for(int i = candleIndex; i < (candleIndex + X_LookBack); i++){
+    xTemp[xCounter] = isUpt ? iHigh(Symbol(),PERIOD_CURRENT, i) : iLow(Symbol(),PERIOD_CURRENT, i);
+    xCounter++;
+  }
+
+  for(int x = candleIndex; x < (candleIndex + Y_LookBack); x++){
+    yTemp[yCounter] = isUpt ? iLow(Symbol(),PERIOD_CURRENT, x) : iHigh(Symbol(),PERIOD_CURRENT, x);
+    yCounter++;
+  }
+
+  int X_Max_i = ArrayMaximum(xTemp, WHOLE_ARRAY, 0);
+  int X_Min_i = ArrayMinimum(xTemp, WHOLE_ARRAY, 0);
+  int Y_Max_i = ArrayMaximum(yTemp, WHOLE_ARRAY, 0);
+  int Y_Min_i = ArrayMinimum(yTemp, WHOLE_ARRAY, 0);
+
+  double X = isUpt ? MathAbs(xTemp[X_Max_i] - currentClose) : MathAbs(currentClose - xTemp[X_Min_i]);
+  double Y = isUpt ? MathAbs( currentClose - yTemp[Y_Min_i] ) : MathAbs( yTemp[Y_Max_i] - currentClose);
+
+  
+  ArrayFill(results, 0, 1, X);
+  ArrayFill(results, 1, 1, Y);
+
+  // results[0] = X;
+  // results[1] = Y;
+
+}
+
+
+bool isThereRoomToBreath(bool isUpt, int candleIndex){
+  double XandYResults[2];
+  ArrayInitialize(XandYResults, EMPTY_VALUE);
+  calcXandY(isUpt, candleIndex, XandYResults);
+  double X = XandYResults[0];
+  double Y = XandYResults[1];
+  int xCounter = 0;
+  int yCounter = 0;
+  // double currentClose = iClose(Symbol(),PERIOD_CURRENT, 1);
+  double currentHigh = iHigh(Symbol(), PERIOD_CURRENT, candleIndex);
+  double currentLow = iLow(Symbol(), PERIOD_CURRENT, candleIndex);
+  double xTemp[];
+  ArrayResize(xTemp, X_LookBack);
+  ArrayInitialize(xTemp, EMPTY_VALUE);
+
+  for(int i = candleIndex; i < (candleIndex + X_LookBack); i++){
+    xTemp[xCounter] = isUpt ? iHigh(Symbol(),PERIOD_CURRENT, i) : iLow(Symbol(), PERIOD_CURRENT, i);
+    xCounter++;
+  }
+
+  int X_Max_i = ArrayMaximum(xTemp, WHOLE_ARRAY, 0);
+  int X_Min_i = ArrayMinimum(xTemp, WHOLE_ARRAY, 0);
+
+  bool isAlreadyHit = isUpt ? isDoublesEqual(xTemp[X_Max_i], currentHigh) : isDoublesEqual(currentLow, xTemp[X_Min_i]) ;
+
+  if(isAlreadyHit) return false;
+  else if(X < Y && X >= ( XYFactor * Y) ) return true;
+  else if( X >= Y) return true;
+  else return false;
+}
+
 
 //+------------------------------------------------------------------+
 //| Custom indicator initialization function                         |
@@ -140,11 +229,11 @@ int OnCalculate(const int rates_total,
     bool isHitting6 = (MA50_2 <= High[i+2] && MA50_2 >= Low[i+2]) || (MA48_2 <= High[i+2] && MA48_2 >= Low[i+2]);
     bool isHittingMA50 = isHitting5 || isHitting6;
 
-    // All Indicators Conditions Boolean
-    bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend;
-    bool isConditionMetUptrendFor50 = isUptrendFor50 && isMAsIncreasingFor50 && RSIValidationUptrend;
-    bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend;
-    bool isConditionMetDowntrendFor50 = isDowntrendFor50 && isMAsDecreasingFor50 && RSIValidationDowntrend;
+   // All Indicators Conditions Boolean
+    bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend && isThereRoomToBreath(true, (i+1));
+    bool isConditionMetUptrendFor50 = isUptrendFor50 && isMAsIncreasingFor50 && RSIValidationUptrend  && isThereRoomToBreath(true, (i+1));
+    bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend  && isThereRoomToBreath(false, (i+1));
+    bool isConditionMetDowntrendFor50 = isDowntrendFor50 && isMAsDecreasingFor50 && RSIValidationDowntrend  && isThereRoomToBreath(false, (i+1));
 
     // is Engulfing Pattern Buy
     bool isPrevBear = Open[i+2] > Close[i+2];
@@ -199,13 +288,13 @@ int OnCalculate(const int rates_total,
     else if(conditionUptrend50 || conditionDowntrend50) currentContext = 50;
 
     if(conditionUptrend) {
-      Buffer1[i] = Low[1+i];
+      Buffer1[i+1] = Low[i+1];
       string msgBuy = getCorrectMSG(true, currentContext);
       if(i == 0 && Time[0] != time_alert) myAlert("indicator", msgBuy); time_alert = Time[0];
     } else Buffer1[i] = EMPTY_VALUE;
     
     if(conditionDowntrend){
-      Buffer2[i] = High[1+i];
+      Buffer2[i+1] = High[i+1];
       string msgSell = getCorrectMSG(false, currentContext);
       if(i == 0 && Time[0] != time_alert) myAlert("indicator", msgSell); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
