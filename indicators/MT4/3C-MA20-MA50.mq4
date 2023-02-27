@@ -19,6 +19,21 @@
 #property indicator_color2 0x0000FF
 #property indicator_label2 "Sell 3C"
 
+// my shit
+const double XYFactor = 0.2;
+const int X_LookBack = 10;
+const int Y_LookBack = 3;
+const double XYMultiplier = 1.3;
+const double SL_ATR_Multiplier = 0.3;
+const int Sharp_Lookback = 5;
+const int Sharp_Multiplier = 2;
+const double Proper_MA_Diff_Multiplier = 0.618;
+const int MA1 = 20;
+const int MA2 = 50;
+const int MA3 = 200;
+const int MA_OFFSET = 1;
+
+
 
 //--- indicator buffers
 double Buffer1[];
@@ -41,9 +56,158 @@ void myAlert(string type, string message) {
   }
 }
 
-//+------------------------------------------------------------------+
-//| Custom indicator initialization function                         |
-//+------------------------------------------------------------------+
+
+
+
+bool isDoublesEqual(double number1,double number2) { 
+   if(NormalizeDouble(number1-number2,8)==0) return true;
+   else return false;
+} 
+
+
+void calcXandY(bool isUpt, int candleIndex, double& results[]){
+  
+  double currentClose = iClose(Symbol(),PERIOD_CURRENT, candleIndex);
+  int xCounter = 0;
+  int yCounter = 0;
+  double xTemp[];
+  double yTemp[];
+  ArrayResize(xTemp, X_LookBack);
+  ArrayResize(yTemp, Y_LookBack);
+  ArrayInitialize(xTemp, EMPTY_VALUE);
+  ArrayInitialize(yTemp, EMPTY_VALUE);
+  
+
+  for(int i = candleIndex; i < (candleIndex + X_LookBack); i++){
+    xTemp[xCounter] = isUpt ? iHigh(Symbol(),PERIOD_CURRENT, i) : iLow(Symbol(),PERIOD_CURRENT, i);
+    xCounter++;
+  }
+
+  for(int x = candleIndex; x < (candleIndex + Y_LookBack); x++){
+    yTemp[yCounter] = isUpt ? iLow(Symbol(),PERIOD_CURRENT, x) : iHigh(Symbol(),PERIOD_CURRENT, x);
+    yCounter++;
+  }
+
+  int X_Max_i = ArrayMaximum(xTemp, WHOLE_ARRAY, 0);
+  int X_Min_i = ArrayMinimum(xTemp, WHOLE_ARRAY, 0);
+  int Y_Max_i = ArrayMaximum(yTemp, WHOLE_ARRAY, 0);
+  int Y_Min_i = ArrayMinimum(yTemp, WHOLE_ARRAY, 0);
+
+  double X = isUpt ? MathAbs(xTemp[X_Max_i] - currentClose) : MathAbs(currentClose - xTemp[X_Min_i]);
+  double Y = isUpt ? MathAbs( currentClose - yTemp[Y_Min_i] ) : MathAbs( yTemp[Y_Max_i] - currentClose);
+
+  
+  ArrayFill(results, 0, 1, X);
+  ArrayFill(results, 1, 1, Y);
+
+  // results[0] = X;
+  // results[1] = Y;
+
+}
+
+
+bool isThereRoomToBreath(bool isUpt, int candleIndex){
+  double XandYResults[2];
+  ArrayInitialize(XandYResults, EMPTY_VALUE);
+  calcXandY(isUpt, candleIndex, XandYResults);
+  double X = XandYResults[0];
+  double Y = XandYResults[1];
+  int xCounter = 0;
+  int yCounter = 0;
+  // double currentClose = iClose(Symbol(),PERIOD_CURRENT, 1);
+  double currentHigh = iHigh(Symbol(), PERIOD_CURRENT, candleIndex);
+  double currentLow = iLow(Symbol(), PERIOD_CURRENT, candleIndex);
+  double xTemp[];
+  ArrayResize(xTemp, X_LookBack);
+  ArrayInitialize(xTemp, EMPTY_VALUE);
+
+  for(int i = candleIndex; i < (candleIndex + X_LookBack); i++){
+    xTemp[xCounter] = isUpt ? iHigh(Symbol(),PERIOD_CURRENT, i) : iLow(Symbol(), PERIOD_CURRENT, i);
+    xCounter++;
+  }
+
+  int X_Max_i = ArrayMaximum(xTemp, WHOLE_ARRAY, 0);
+  int X_Min_i = ArrayMinimum(xTemp, WHOLE_ARRAY, 0);
+
+  bool isAlreadyHit = isUpt ? isDoublesEqual(xTemp[X_Max_i], currentHigh) : isDoublesEqual(currentLow, xTemp[X_Min_i]) ;
+
+  if(isAlreadyHit) return false;
+  else if(X < Y && X >= ( XYFactor * Y) ) return true;
+  else if( X >= Y) return true;
+  else return false;
+}
+
+
+void getOHLC(int candleIndex, double& results[]){
+  string S = Symbol();
+  double O = iOpen(S, PERIOD_CURRENT, candleIndex);
+  double H = iHigh(S, PERIOD_CURRENT, candleIndex);
+  double L = iLow(S, PERIOD_CURRENT, candleIndex);
+  double C = iClose(S, PERIOD_CURRENT, candleIndex);
+  ArrayFill(results, 0, 1, O);
+  ArrayFill(results, 1, 1, H);
+  ArrayFill(results, 2, 1, L);
+  ArrayFill(results, 3, 1, C);
+}
+
+
+
+bool isNotSharpCandle(int candleIndex){
+  int L = Sharp_Lookback;
+  string S = Symbol();
+  double carrier = 0;
+  double OHLC_1[4];
+  double OHLC_2[4];
+  double OHLC_3[4];
+  getOHLC(candleIndex, OHLC_1);
+  getOHLC((candleIndex + 1), OHLC_2);
+  getOHLC((candleIndex + 2), OHLC_3);
+  for(int i = candleIndex; i < (candleIndex + L); i++){
+    double h = iHigh(S, PERIOD_CURRENT, i);
+    double l = iLow(S, PERIOD_CURRENT, i);
+    carrier += (h - l);
+  }
+
+  double average = carrier / L;
+  double diff1 = OHLC_1[1] - OHLC_1[2];
+  double diff2 = OHLC_2[1] - OHLC_2[2];
+  double diff3 = OHLC_3[1] - OHLC_3[2];
+  double mult = (average * Sharp_Multiplier);
+  bool isSharp = diff1 > mult || diff2 > mult || diff3 > mult;
+  return !isSharp;
+}
+
+
+bool isHittingMA(int candleIndex, int MA){
+  double theMA = iMA(NULL, PERIOD_CURRENT, MA, 0, MODE_SMA, PRICE_CLOSE, candleIndex);
+  double theMAOffset = iMA(NULL, PERIOD_CURRENT, (MA - MA_OFFSET), 0, MODE_SMA, PRICE_CLOSE, candleIndex);
+  string S = Symbol();
+  double OHLC[4];
+  getOHLC(candleIndex, OHLC);
+  bool isH = (OHLC[1] >= theMA && theMA >= OHLC[2] ) || (OHLC[1] >= theMAOffset && theMAOffset >= OHLC[2]);
+  return isH;
+}
+
+
+bool isNotHittingAllMAs(int candleIndex){
+  int before = candleIndex + 1;
+  int third = candleIndex + 2;
+  bool is1HittingMA1 = isHittingMA(candleIndex, MA1);
+  bool is1HittingMA2 = isHittingMA(candleIndex, MA2);
+  bool is1HittingMA3 = isHittingMA(candleIndex, MA3);
+  bool is2HittingMA1 = isHittingMA(before, MA1);
+  bool is2HittingMA2 = isHittingMA(before, MA2);
+  bool is2HittingMA3 = isHittingMA(before, MA3);
+  bool is3HittingMA1 = isHittingMA(third, MA1);
+  bool is3HittingMA2 = isHittingMA(third, MA2);
+  bool is3HittingMA3 = isHittingMA(third, MA3);
+  bool isNot = !(is1HittingMA1 && is1HittingMA2 && is1HittingMA3) && !(is2HittingMA1 && is2HittingMA2 && is2HittingMA3) && !(is3HittingMA1 && is3HittingMA2 && is3HittingMA3);
+  return isNot;
+}
+
+
+
+
 int OnInit() {   
   IndicatorBuffers(2);
   SetIndexBuffer(0, Buffer1);
@@ -88,45 +252,38 @@ int OnCalculate(const int rates_total,
   for(int i = limit-1; i >= 0; i--) {
     if (i >= MathMin(5000-1, rates_total-1-50)) continue; //omit some old rates to prevent "Array out of range" or slow calculation
     // Main MAs & RSI
-    float MA20_1 = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+1);
-    float MA20_2 = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA20_3 = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, i+3);
-    float MA50_1 = iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+1);
-    float MA50_2 = iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA50_3 = iMA(NULL, PERIOD_CURRENT, 50, 0, MODE_SMA, PRICE_CLOSE, i+3);
-    float MA200_1 = iMA(NULL, PERIOD_CURRENT, 200, 0, MODE_SMA, PRICE_CLOSE, i+1);
-    float MA200_2 = iMA(NULL, PERIOD_CURRENT, 200, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA200_3 = iMA(NULL, PERIOD_CURRENT, 200, 0, MODE_SMA, PRICE_CLOSE, i+3);
-    float RSI = iRSI(NULL, PERIOD_CURRENT, 14, PRICE_CLOSE, 1+i);
-    // Approximation MAs for Better PB Detection
-    float MA18_1 = iMA(NULL, PERIOD_CURRENT, 18, 0, MODE_SMA, PRICE_CLOSE, i+1);
-    float MA18_2 = iMA(NULL, PERIOD_CURRENT, 18, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA18_3 = iMA(NULL, PERIOD_CURRENT, 18, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA48_1 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+1);
-    float MA48_2 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+2);
-    float MA48_3 = iMA(NULL, PERIOD_CURRENT, 48, 0, MODE_SMA, PRICE_CLOSE, i+2);
+    double MA20_1 = iMA(NULL, PERIOD_CURRENT, MA1, 0, MODE_SMA, PRICE_CLOSE, i+1);
+    double MA20_2 = iMA(NULL, PERIOD_CURRENT, MA1, 0, MODE_SMA, PRICE_CLOSE, i+2);
+    double MA20_3 = iMA(NULL, PERIOD_CURRENT, MA1, 0, MODE_SMA, PRICE_CLOSE, i+3);
+    double MA50_1 = iMA(NULL, PERIOD_CURRENT, MA2, 0, MODE_SMA, PRICE_CLOSE, i+1);
+    double MA50_2 = iMA(NULL, PERIOD_CURRENT, MA2, 0, MODE_SMA, PRICE_CLOSE, i+2);
+    double MA50_3 = iMA(NULL, PERIOD_CURRENT, MA2, 0, MODE_SMA, PRICE_CLOSE, i+3);
+    double MA200_1 = iMA(NULL, PERIOD_CURRENT, MA3, 0, MODE_SMA, PRICE_CLOSE, i+1);
+    double MA200_2 = iMA(NULL, PERIOD_CURRENT, MA3, 0, MODE_SMA, PRICE_CLOSE, i+2);
+    double MA200_3 = iMA(NULL, PERIOD_CURRENT, MA3, 0, MODE_SMA, PRICE_CLOSE, i+3);
+    double RSI = iRSI(NULL, PERIOD_CURRENT, 14, PRICE_CLOSE, 1+i);
+    double ATR = iATR(NULL, PERIOD_CURRENT, 14, i+1);
     // MA comparison & RSI Validation
     bool isUptrend = MA20_1 > MA50_1 && MA50_1 > MA200_1 && MA20_2 > MA50_2 && MA50_2 > MA200_2 && MA20_3 > MA50_3 && MA50_3 > MA200_3;
     bool isDowntrend = MA20_1 < MA50_1 && MA50_1 < MA200_1 && MA20_2 < MA50_2 && MA50_2 < MA200_2 && MA20_3 < MA50_3 && MA50_3 < MA200_3;
     bool RSIValidationUptrend = RSI < 70;
     bool RSIValidationDowntrend = RSI > 30;
     // MAs increasing in value
-    bool isMAsIncreasing = MA20_1 > MA20_2 && MA20_2 > MA20_3 && MA50_1 > MA50_2 && MA50_2 > MA50_3;
-    bool isMAsDecreasing = MA20_1 < MA20_2 && MA20_2 < MA20_3 && MA50_1 < MA50_2 && MA50_2 < MA50_3;
+    bool isMAsIncreasing = MA20_1 > MA20_2 && MA50_1 > MA50_2;
+    bool isMAsDecreasing = MA20_1 < MA20_2 && MA50_1 < MA50_2;
 
-    // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
-    bool isHitting1 = (MA20_1 <= High[i+1] && MA20_1 >= Low[i+1]) || (MA18_1 <= High[i+1] && MA18_1 >= Low[i+1]);
-    bool isHitting2 = (MA20_2 <= High[i+2] && MA20_2 >= Low[i+2]) || (MA18_2 <= High[i+2] && MA18_2 >= Low[i+2]);
-    bool isHitting3 = (MA20_3 <= High[i+3] && MA20_3 >= Low[i+3]) || (MA18_3 <= High[i+3] && MA18_3 >= Low[i+3]);
-    bool isHittingMA20 = isHitting1 || isHitting2 || isHitting3;
-    bool isHitting4 = (MA50_1 <= High[i+1] && MA50_1 >= Low[i+1]) || (MA48_1 <= High[i+1] && MA48_1 >= Low[i+1]);
-    bool isHitting5 = (MA50_2 <= High[i+2] && MA50_2 >= Low[i+2]) || (MA48_2 <= High[i+2] && MA48_2 >= Low[i+2]);
-    bool isHitting6 = (MA50_3 <= High[i+3] && MA50_3 >= Low[i+3]) || (MA48_3 <= High[i+3] && MA48_3 >= Low[i+3]);
-    bool isHittingMA50 = isHitting4 || isHitting5 || isHitting6;
+    bool isHittingMA20 = isHittingMA(i+1, 20) || isHittingMA(i+2, 20) || isHittingMA(i+3, 20);
+    bool isHittingMA50 = isHittingMA(i+1, 50)  || isHittingMA(i+2, 50) || isHittingMA(i+3, 50);
+
+    bool isNotSharp = isNotSharpCandle(i+1);
+    // bool isProperMA = isProperMADistance(MA1, MA2, MA3);
+    bool isNotHittingAll = isNotHittingAllMAs(i+1);
+    bool isThereRoomUp = isThereRoomToBreath(true, i+1);
+    bool isThereRoomDown = isThereRoomToBreath(false, i+1);
 
     // All Indicators Conditions Boolean
-    bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend;
-    bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend;
+    bool isConditionMetUptrend = isUptrend && isMAsIncreasing && RSIValidationUptrend && isThereRoomUp && isNotSharp && isNotHittingAll;
+    bool isConditionMetDowntrend = isDowntrend && isMAsDecreasing && RSIValidationDowntrend && isThereRoomDown && isNotSharp && isNotHittingAll;
 
     // is 3 Candle pattern Buy 
     bool is3rdBear = Open[i+3] > Close[i+3];
@@ -142,7 +299,7 @@ int OnCalculate(const int rates_total,
     bool isUpperShadowsSmallerThanBodies = upperShadow1 < body1B && upperShadow2 < body2B;
     bool isCloseAbove20 = Close[i+1] > MA20_1;
     bool isCloseAbove50 = Close[i+1] > MA50_1;
-    bool is3CPatternBuy = is3rdBear && isPrevBull && isCurrentBull && isHigherClose && isHigherShadow && isOHCL3BiggerThan2 && isUpperShadowsSmallerThanBodies;
+    bool is3CPatternBuy = is3rdBear && isPrevBull && isCurrentBull && isHigherClose && isHigherShadow && isOHCL3BiggerThan2;
     bool is3CBuy20 = is3CPatternBuy && isCloseAbove20;
     bool is3CBuy50 = is3CPatternBuy && isCloseAbove50;
     // is 2 Candle pattern Sell
@@ -159,7 +316,7 @@ int OnCalculate(const int rates_total,
     bool isLowerShadowsSmallerThanBodies = lowerShadow1 < body1S && lowerShadow2 < body2S;
     bool isCloseBelow20 = Close[i+1] < MA20_1;
     bool isCloseBelow50 = Close[i+1] < MA50_1;
-    bool is3CPatternSell = is3rdBull && isPrevBear && isCurrentBear && isLowerClose && isLowerShadow && isOHCL3SmallerThan2 && isLowerShadowsSmallerThanBodies;
+    bool is3CPatternSell = is3rdBull && isPrevBear && isCurrentBear && isLowerClose && isLowerShadow && isOHCL3SmallerThan2;
     bool is3CSell20 = is3CPatternSell && isCloseBelow20;
     bool is3CSell50 = is3CPatternSell && isCloseBelow50;
 
@@ -170,13 +327,18 @@ int OnCalculate(const int rates_total,
     bool conditionDowntrend20 = isConditionMetDowntrend && isHittingMA20 && is3CSell20;
     bool conditionDowntrend50 = isConditionMetDowntrend && isHittingMA50 && is3CSell50;
 
+    // arrow place
+    double distance = 0.3;
+    double arrowMultUp = (Low[i+1] - (distance * ATR));
+    double arrowMultDown = (High[i+1] + (distance * ATR));
+
     if(conditionUptrend20 || conditionUptrend50) {
-      Buffer1[i] = Low[1+i];
+      Buffer1[i+1] = arrowMultUp;
       if(i == 0 && Time[0] != time_alert) myAlert("indicator", conditionUptrend20 ? "Buy 3C-MA20" : "Buy 3C-MA50"); time_alert = Time[0];
     } else Buffer1[i] = EMPTY_VALUE;
     
     if(conditionDowntrend20 || conditionDowntrend50){
-      Buffer2[i] = Low[1+i];
+      Buffer2[i+1] = arrowMultDown;
       if(i == 0 && Time[0] != time_alert) myAlert("indicator", conditionDowntrend20 ? "Sell 3C-MA20" : "Sell 3C-MA50"); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
 
