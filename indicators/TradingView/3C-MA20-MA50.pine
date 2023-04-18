@@ -1,51 +1,117 @@
-// Author: @AliSawari 2023
+// Author: @AliSawari 2023ma50[1]ma7[1]
 
 //@version=5
-indicator("3C-MA20-MA50", shorttitle = "3C Pattern MA20-MA50", overlay=true)
-
+indicator("3C Pattern", shorttitle = "3C Pattern", overlay=true)
 // MA, RSI, MACD, ATR
-ma20 = ta.sma(close, 20)
-ma50 = ta.sma(close, 50)
-ma200 = ta.sma(close, 200)
+MA1 = input(20, "MA1")
+MA2 = input(50, "MA2")
+MA3 = input(200, "MA3")
+
+MA_offset = input(1, "MA Offset for Pullback Detection", "Used to replicate the same calculation with a slight offset")
+
+ma8 = ta.sma(close, MA1)
+ma20 = ta.sma(close, MA2)
+ma50 = ta.sma(close, MA3)
 rsi = ta.rsi(close, 14)
-[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
-atr = ta.atr(14)
+// [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+atr = ta.atr(input(14))
 // MA for pullback approximation
-ma18 = ta.sma(close, 18)
-ma48 = ta.sma(close, 48)
+ma7 = ta.sma(close, MA1 - MA_offset)
+ma19 = ta.sma(close, MA2 - MA_offset)
+ma49 = ta.sma(close, MA3 - MA_offset)
 
-// MA comparison & RSI, MACD Validation
+// X,Y comparison factor
+enable_X_Y_Calculations = input(true)
+XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.1) Y for a position to be valid")
+XLookBack = input(10, "Bar count back for finding X")
+YLookBack = input(3, "Bar count back for finding Y")
 
-isUptrend = (ma20 > ma50) and (ma50 > ma200) and (ma20[1] > ma50[1]) and (ma50[1] > ma200[1]) and (ma20[2] > ma50[2]) and (ma50[2] > ma200[2])
-isDowntrend = (ma20 < ma50) and (ma50 < ma200) and (ma20[1] < ma50[1]) and (ma50[1] < ma200[1]) and (ma20[2] < ma50[2]) and (ma50[2] < ma200[2])
+// MA diff calculation based on ATR
+enable_MA_diff_calculation = input(true)
+MA_diff_mult = input(0.5)
+MA_diff_mult_value = (atr * MA_diff_mult)
+ma1_2_diff = math.abs(ma8 - ma20)
+ma2_3_diff = math.abs(ma20 - ma50)
 
+
+
+isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1])
+isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1])
+isDowntrend = (ma8 < ma20) and (ma20 < ma50) and (ma8[1] < ma20[1]) and (ma20[1] < ma50[1])
+isDowntrendFor50 = (ma20 < ma50) and (ma20[1] < ma50[1])
 
 RSIValidationUptrend = rsi < 70 
 RSIValidationDowntrend = rsi > 30
 
-MACDValidationUptrend = macdLine[1] <= signalLine[1] or macdLine[2] <= signalLine[2]
-MACDValidationDowntrend = macdLine[1] >= signalLine[1] or macdLine[2] >= signalLine[2]
-
-// MAs & MACDs increasing in value
-isMAsIncreasing = ma20 > ma20[1] and ma50 > ma50[1] and ma20[1] > ma20[2] and ma50[1] > ma50[2]
-// MAs & MACDs decreasing in value
-isMAsDecreasing = ma20 < ma20[1] and ma50 < ma50[1] and ma20[1] < ma20[2] and ma50[1] < ma50[2]
-
+// MAs increasing in value
+isMAsIncreasing = ma8 > ma8[1] and ma20 > ma20[1] and ma50 > ma50[1]
+isMAsIncreasingFor50 = ma20 > ma20[1] and ma50 > ma50[1]
+// MAs decreasing in value
+isMAsDecreasing = ma8 < ma8[1] and ma20 < ma20[1] and ma50 < ma50[1]
+isMAsDecreasingFor50 = ma20 < ma20[1] and ma50 < ma50[1]
 
 // is either of the candles are in contact with the MA (approximation -2), in order to detect a Pullback on the MA
-isHitting1 = (ma20 <= high and ma20 >= low) or (ma18 <= high and ma18 >= low)
-isHitting2 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma18[1] <= high[1] and ma18[1] >= low[1])
-isHitting3 = (ma20[2] <= high[2] and ma20[2] >= low[2]) or (ma18[2] <= high[2] and ma18[2] >= low[2])
-isHittingMA20 = isHitting1 or isHitting2 or isHitting3
-isHitting4 = (ma50 <= high and ma50 >= low) or (ma48 <= high and ma48 >= low)
-isHitting5 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma48[1] <= high[1] and ma48[1] >= low[1])
-isHitting6 = (ma50[2] <= high[2] and ma50[2] >= low[2]) or (ma48[2] <= high[2] and ma48[2] >= low[2])
-isHittingMA50 = isHitting4 or isHitting5 or isHitting6
+isHitting1 = (ma8 <= high and ma8 >= low) or (ma7 <= high and ma7 >= low)
+isHitting2 = (ma8[1] <= high[1] and ma8[1] >= low[1]) or (ma7[1] <= high[1] and ma7[1] >= low[1])
+isHittingMA8 = isHitting1 or isHitting2
+isHitting3 = (ma20 <= high and ma20 >= low) or (ma19 <= high and ma19 >= low)
+isHitting4 = (ma20[1] <= high[1] and ma20[1] >= low[1]) or (ma19[1] <= high[1] and ma19[1] >= low[1])
+isHittingMA20 = isHitting3 or isHitting4
+isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
+isHitting6 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
+isHittingMA50 = isHitting5 or isHitting6
+
+// calculate X,Y
+isThereRoomToBreathe(upt) => 
+    isThereRoom = false
+    
+    X = if upt
+        ta.highest(high, XLookBack) - close
+    else
+        close - ta.lowest(low, XLookBack)
+
+    Y = if upt
+        close - ta.lowest(low, YLookBack)
+    else
+        ta.highest(high, YLookBack) - close
+
+    isAlreadyHit = if upt 
+        ta.highest(high, XLookBack) == high
+    else
+        ta.lowest(low, XLookBack) == low
+
+    if isAlreadyHit
+        isThereRoom := false
+    else if X <= Y and (X >= (XYFactor * Y))
+        isThereRoom := true
+    else if X > Y
+        isThereRoom := true
+
+    toBeReturned = enable_X_Y_Calculations ?  isThereRoom : true
+    toBeReturned
+
+
+isProperMADiff() =>
+    isProper_Temp = false
+    if isHittingMA8 and not isHittingMA20 and not isHittingMA50
+        isProper_Temp := ma1_2_diff >= MA_diff_mult_value
+    else if isHittingMA8 and isHittingMA20 and isHittingMA50
+        isProper_Temp := false
+    else if isHittingMA20 or isHittingMA50 and not isHittingMA8
+        isProper_Temp := ma2_3_diff >= MA_diff_mult_value and ma1_2_diff >= (MA_diff_mult_value / 2)
+
+    isProperDistance = enable_MA_diff_calculation ? isProper_Temp : true
+    isProperDistance
+    
 
 
 // if conditions met for Indicator Values
-isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing
-isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing
+isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing and isThereRoomToBreathe(true) and isProperMADiff()
+isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing and isThereRoomToBreathe(false) and isProperMADiff()
+
+isConditionsMetUptrendFor50 = isUptrendFor50 and RSIValidationUptrend  and isMAsIncreasingFor50 and isThereRoomToBreathe(true) and isProperMADiff()
+isConditionsMetDowntrendFor50 = isDowntrendFor50 and RSIValidationDowntrend and isMAsDecreasingFor50 and isThereRoomToBreathe(false) and isProperMADiff()
+
 
 getShadows(i) =>
     upperShadow = high[i] - math.max(open[i], close[i])
@@ -92,56 +158,63 @@ is3CSell50 = is3CPatternSell and isCloseBelow50
 
 
 // final conditions
-conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and is3CBuy20
-conditionUptrend50 = isConditionsMetUptrend and isHittingMA50 and is3CBuy50
-conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and is3CSell20
-conditionDowntrend50 = isConditionsMetDowntrend and isHittingMA50 and is3CSell50
+conditionUptrend8 = isConditionsMetUptrend and isHittingMA8 and is3CBuy20
+conditionUptrend20 = isConditionsMetUptrend and isHittingMA20 and is3CBuy50
+conditionDowntrend8 = isConditionsMetDowntrend and isHittingMA8 and is3CSell20
+conditionDowntrend20 = isConditionsMetDowntrend and isHittingMA20 and is3CSell50
 
-conditionUptrend = conditionUptrend20 or conditionUptrend50
-conditionDowntrend = conditionDowntrend20 or conditionDowntrend50
+conditionUptrend = conditionUptrend8 or conditionUptrend20
+conditionDowntrend = conditionDowntrend8 or conditionDowntrend20 
 
 // styling
 labelPositionBuy = low - (ta.atr(30) * 0.6)
-LabelPositionSell = high + (ta.atr(30) * 0.6)
-labelColorSell = color.red
-labelColorBuy = color.blue
-labelTextColor = color.white
-bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, 0)
-bgcolor(conditionUptrend ? color.new(color.blue, 90) : na, -1)
-bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, 0)
-bgcolor(conditionDowntrend ? color.new(color.red, 90) : na, -1)
-plot(ma20, color = color.blue)
-plot(ma50, color = color.orange)
-plot(ma200, color = color.black)
+labelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorBuy = input(color.blue, "Label Color Buy")
+labelColorSell = input(color.red, "Label Color Sell")
+labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
+labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
+MA1_color = input(color.red, "MA1 Color")
+MA2_color = input(color.blue, "MA2 Color")
+MA3_color = input(color.gray, "MA3 Color")
+bgcolor(conditionUptrend ? labelColorBuyBG : na, 0)
+bgcolor(conditionUptrend ? labelColorBuyBG : na, -1)
+bgcolor(conditionDowntrend ? labelColorSellBG : na, 0)
+bgcolor(conditionDowntrend ? labelColorSellBG : na, -1)
+plot(ma8, color = MA1_color)
+plot(ma20, color = MA2_color)
+plot(ma50, color = MA3_color)
+labelTextBuy = input("B3C", "Label Text for Buy indicator")
+labelTextSell = input("S3C", "Label Text for Sell indicator")
+labelTooltipBuy = input("Buy 3C MA", "Label Tooltip Text for Buy indicator")
+labelTooltipSell = input("Sell 3C MA", "Label Tooltip Text for Sell indicator")
 
-getCorrectMSG(type) =>
+
+getCorrectMSG(type, uptrend, context) =>
     msg = ""
     if type == "text"
-        msg := if conditionUptrend20
-            "B3C-20"
-        else if conditionUptrend50
-            "B3C-50"
-        else if conditionDowntrend20
-            "S3C-20"
-        else if conditionDowntrend50
-            "S3C-50"
+        msg := if uptrend
+            labelTextBuy + context
+        else
+            labelTextSell + context
     if type == "tooltip"
-        msg := if conditionUptrend20
-            "Buy 3C MA20"
-        else if conditionUptrend50
-            "Buy 3C MA50"
-        else if conditionDowntrend20
-            "Sell 3C MA20"
-        else if conditionDowntrend50
-            "Sell 3C MA50"
+        msg := if uptrend
+            labelTooltipBuy + context
+        else
+            labelTooltipSell + context
     
     msg
 
 
+context = if (conditionUptrend8 or conditionDowntrend8)
+    str.tostring(MA1)
+else if (conditionUptrend20 or conditionDowntrend20)
+    str.tostring(MA2)
+
+
 // main
 if conditionUptrend
-    label.new(bar_index, labelPositionBuy, text = getCorrectMSG("text"), style=label.style_label_up, color = labelColorBuy, textcolor=labelTextColor, tooltip = getCorrectMSG("tooltip"))
+    label.new(bar_index,labelPositionBuy,text = getCorrectMSG("text", true, context),style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = getCorrectMSG("tooltip", true, context) )
 else if conditionDowntrend
-    label.new(bar_index, LabelPositionSell, text = getCorrectMSG("text"), style=label.style_label_down, color = labelColorSell, textcolor=labelTextColor, tooltip = getCorrectMSG("tooltip") )
+    label.new(bar_index,labelPositionSell,text = getCorrectMSG("text", false, context),style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = getCorrectMSG("tooltip", false, context) )
 
 
