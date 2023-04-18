@@ -15,18 +15,24 @@ ma20 = ta.sma(close, MA2)
 ma50 = ta.sma(close, MA3)
 rsi = ta.rsi(close, 14)
 // [macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
-// atr = ta.atr(14)
+atr = ta.atr(input(14))
 // MA for pullback approximation
 ma7 = ta.sma(close, MA1 - MA_offset)
 ma19 = ta.sma(close, MA2 - MA_offset)
 ma49 = ta.sma(close, MA3 - MA_offset)
 
 // X,Y comparison factor
+enable_X_Y_Calculations = input(true)
 XYFactor = input(0.2, "X to Y ratio factor", "X should be (0.1) Y for a position to be valid")
 XLookBack = input(10, "Bar count back for finding X")
 YLookBack = input(3, "Bar count back for finding Y")
 
-
+// MA diff calculation based on ATR
+enable_MA_diff_calculation = input(true)
+MA_diff_mult = input(0.5)
+MA_diff_mult_value = (atr * MA_diff_mult)
+ma1_2_diff = math.abs(ma8 - ma20)
+ma2_3_diff = math.abs(ma20 - ma50)
 
 isUptrend = (ma8 > ma20) and (ma20 > ma50) and (ma8[1] > ma20[1]) and (ma20[1] > ma50[1])
 isUptrendFor50 =  (ma20 > ma50) and (ma20[1] > ma50[1])
@@ -54,6 +60,7 @@ isHitting5 = (ma50 <= high and ma50 >= low) or (ma49 <= high and ma49 >= low)
 isHitting6 = (ma50[1] <= high[1] and ma50[1] >= low[1]) or (ma49[1] <= high[1] and ma49[1] >= low[1])
 isHittingMA50 = isHitting5 or isHitting6
 
+
 // calculate X,Y
 isThereRoomToBreathe(upt) => 
     isThereRoom = false
@@ -75,20 +82,35 @@ isThereRoomToBreathe(upt) =>
 
     if isAlreadyHit
         isThereRoom := false
-    else if X < Y and (X >= (XYFactor * Y))
+    else if X <= Y and (X >= (XYFactor * Y))
         isThereRoom := true
     else if X > Y
         isThereRoom := true
 
-    isThereRoom
+    toBeReturned = enable_X_Y_Calculations ?  isThereRoom : true
+    toBeReturned
 
+
+
+isProperMADiff() =>
+    isProper_Temp = false
+    if isHittingMA8 and not isHittingMA20 and not isHittingMA50
+        isProper_Temp := ma1_2_diff >= MA_diff_mult_value
+    else if isHittingMA8 and isHittingMA20 and isHittingMA50
+        isProper_Temp := false
+    else if isHittingMA20 or isHittingMA50 and not isHittingMA8
+        isProper_Temp := ma2_3_diff >= MA_diff_mult_value and ma1_2_diff >= (MA_diff_mult_value / 2)
+
+    isProperDistance = enable_MA_diff_calculation ? isProper_Temp : true
+    isProperDistance
+    
 
 // if conditions met for Indicator Values
-isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing and isThereRoomToBreathe(true)
-isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing and isThereRoomToBreathe(false)
+isConditionsMetUptrend = isUptrend and RSIValidationUptrend  and isMAsIncreasing and isThereRoomToBreathe(true) and isProperMADiff()
+isConditionsMetDowntrend = isDowntrend and RSIValidationDowntrend and isMAsDecreasing and isThereRoomToBreathe(false) and isProperMADiff()
 
-isConditionsMetUptrendFor50 = isUptrendFor50 and RSIValidationUptrend  and isMAsIncreasingFor50 and isThereRoomToBreathe(true)
-isConditionsMetDowntrendFor50 = isDowntrendFor50 and RSIValidationDowntrend and isMAsDecreasingFor50 and isThereRoomToBreathe(false)
+isConditionsMetUptrendFor50 = isUptrendFor50 and RSIValidationUptrend  and isMAsIncreasingFor50 and isThereRoomToBreathe(true) and isProperMADiff()
+isConditionsMetDowntrendFor50 = isDowntrendFor50 and RSIValidationDowntrend and isMAsDecreasingFor50 and isThereRoomToBreathe(false) and isProperMADiff()
 
 
 // Hammer Buy Pattern
