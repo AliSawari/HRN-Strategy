@@ -65,9 +65,6 @@ is3C(upt) =>
 	isCurrentBull = open < close
 	isHigherClose = close > close[1]
 	isHigherShadow = high > high[1]
-	isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2 and upperShadow3 < body3
-	isCloseAbove20 = close > ma20
-	isCloseAbove50 = close > ma50
 	is3CPatternBuy = is3rdBearish and isPrevBull and isCurrentBull and isHigherClose
 
 	// is 3 Candle pattern Sell
@@ -76,9 +73,6 @@ is3C(upt) =>
 	isCurrentBear = open > close
 	isLowerClose = close < close[1]
 	isLowerShadow = low < low[1]
-	isLowerShadowsSmallerThanBodies = lowerShadow1 < body1 and lowerShadow2 < body2 and lowerShadow3 < body3
-	isCloseBelow20 = close < ma20
-	isCloseBelow50 = close < ma50
 	is3CPatternSell = is3rdBullish and isPrevBear and isCurrentBear and isLowerClose
 
 	res = if upt
@@ -121,8 +115,8 @@ isWholeBodyInside(index) => (open[index] < upperBand[index] and close[index] < u
 
 isCloseInside(index) => (close[index] < upperBand[index]) and (close[index] > lowerBand[index])
 
-conditionForLong = (is2C(false) or is3C(false)) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isCloseInside(0)
-conditionForShort = (is2C(true) or is3C(true)) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isCloseInside(0)
+conditionForLong = (is3C(false)) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isCloseInside(0) and isRSIValid(false)
+conditionForShort = (is3C(true)) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isCloseInside(0) and isRSIValid(true)
 
 
 labelPositionBuy = low - (ta.atr(30) * 0.6)
