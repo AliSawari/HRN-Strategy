@@ -1,0 +1,104 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © alisawari
+
+//@version=5
+indicator("BB-Myne", overlay = true)
+length = input(20)
+mult = input(2.0)
+dev = mult * ta.stdev(close, length)
+rsi = ta.rsi(close, input(14))
+atr = ta.atr(input(14))
+
+[basis, upperBand, lowerBand] = ta.bb(close, length, mult)
+
+// plot(rsi)
+plot(basis)
+plot(upperBand)
+plot(lowerBand)
+
+rsiUpperLevel = input(70)
+rsiLowerLevel = input(30)
+
+
+isRSIValid(upt) =>
+	isValidUp = math.ceil(rsi) >= rsiUpperLevel or math.ceil(rsi[1]) >= rsiUpperLevel or math.ceil(rsi[2]) >= rsiUpperLevel
+	isValidDown = math.floor(rsi) <= rsiLowerLevel or math.floor(rsi[1]) <= rsiLowerLevel or math.floor(rsi[2]) <= rsiLowerLevel
+	res = if upt
+		isValidUp
+	else
+		isValidDown
+	res
+
+is2C(upt) =>
+	isPrevBear = open[1] > close[1]
+	isCurrentBull = open < close
+	isHigherClose = close >= math.max(open[1], close[1])
+	isHigherShadow = high >= high[1]
+	body1B = math.abs(close - open)
+	body2B = math.abs(open[1] - close[1])
+	upperShadow1 = high - math.max(open, close)
+	upperShadow2 = high[1] - math.max(open[1], close[1])
+	is2CBuy = isPrevBear and isCurrentBull and isHigherClose
+
+	isPrevBull = open[1] < close[1]  
+	isCurrentBear = open > close
+	isLowerClose = close <= math.min(open[1], close[1])
+	isLowerShadow = low <= low[1]
+	body1S = math.abs(close - open)
+	body2S = math.abs(open[1] - close[1])
+	belowShadow1 = math.min(open, close) - low
+	belowShadow2 = math.min(open[1], close[1]) - low[1]
+	is2CSell = isPrevBull and isCurrentBear and isLowerClose
+
+	res = if upt
+		is2CSell
+	else
+		is2CBuy
+	res
+
+isHittingMA(ma_len, offset, index) =>
+	MA = ta.sma(close, ma_len)
+	MA_OFF = ta.sma(close, (ma_len - offset))
+	yes = false
+	yes := (high[index] >= MA[index] and MA[index] >= low[index]) or (high[index] >= MA_OFF[index] and MA_OFF[index] >= low[index])
+	yes
+
+
+isHittingBand(upt, index) =>
+	hittingUpper = (high[index] >= upperBand[index] and upperBand[index] >= low[index])
+	hittingLower = (high[index] >= lowerBand[index] and lowerBand[index] >= low[index])
+
+	res = if upt
+		hittingUpper
+	else
+		hittingLower
+	res
+
+
+isWholeBodyAboveOrLowerBand(upt, index) =>
+	isWholeBodyAbove = open[index] > upperBand[index] and close[index] > upperBand[index]
+	isWholeBodyBelow = open[index] < lowerBand[index] and close[index] < lowerBand[index]
+	res = if upt
+		isWholeBodyAbove
+	else
+		isWholeBodyBelow
+	res
+
+isWholeBodyInside(index) => (open[index] < upperBand[index] and close[index] < upperBand[index]) and (open[index] > lowerBand[index] and close[index] > lowerBand[index])
+
+conditionForLong = isRSIValid(false) and is2C(false) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isWholeBodyInside(0)
+conditionForShort = isRSIValid(true) and is2C(true) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isWholeBodyInside(0)
+
+
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+LabelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorSell = input(color.red, "Label Color Bearish")
+labelColorBuy = input(color.blue, "Label Color Bullish")
+
+// main
+if conditionForLong
+	label.new(bar_index, labelPositionBuy, text = "BB-LONG", style=label.style_label_up, color = labelColorBuy, textcolor=color.white, tooltip = "BB-MYNE LONG")
+else if conditionForShort
+	label.new(bar_index, LabelPositionSell, text = "BB-SHORT", style=label.style_label_down, color = labelColorSell, textcolor=color.white, tooltip = "BB-MYNE SHORT" )
+
+
