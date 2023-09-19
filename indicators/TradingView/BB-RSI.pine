@@ -56,6 +56,39 @@ is2C(upt) =>
 		is2CBuy
 	res
 
+
+
+is3C(upt) =>
+	// is 3 Candle pattern Buy
+	is3rdBearish = open[2] > close[2]
+	isPrevBull = open[1] < close[1]
+	isCurrentBull = open < close
+	isHigherClose = close > close[1]
+	isHigherShadow = high > high[1]
+	isUpperShadowsSmallerThanBodies = upperShadow1 < body1 and upperShadow2 < body2 and upperShadow3 < body3
+	isCloseAbove20 = close > ma20
+	isCloseAbove50 = close > ma50
+	is3CPatternBuy = is3rdBearish and isPrevBull and isCurrentBull and isHigherClose
+
+	// is 3 Candle pattern Sell
+	is3rdBullish = open[2] < close[2]
+	isPrevBear = open[1] > close[1]
+	isCurrentBear = open > close
+	isLowerClose = close < close[1]
+	isLowerShadow = low < low[1]
+	isLowerShadowsSmallerThanBodies = lowerShadow1 < body1 and lowerShadow2 < body2 and lowerShadow3 < body3
+	isCloseBelow20 = close < ma20
+	isCloseBelow50 = close < ma50
+	is3CPatternSell = is3rdBullish and isPrevBear and isCurrentBear and isLowerClose
+
+	res = if upt
+		is3CPatternSell
+	else
+		is3CPatternBuy
+	res
+
+
+
 isHittingMA(ma_len, offset, index) =>
 	MA = ta.sma(close, ma_len)
 	MA_OFF = ta.sma(close, (ma_len - offset))
@@ -86,8 +119,10 @@ isWholeBodyAboveOrLowerBand(upt, index) =>
 
 isWholeBodyInside(index) => (open[index] < upperBand[index] and close[index] < upperBand[index]) and (open[index] > lowerBand[index] and close[index] > lowerBand[index])
 
-conditionForLong = isRSIValid(false) and is2C(false) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isWholeBodyInside(0)
-conditionForShort = isRSIValid(true) and is2C(true) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isWholeBodyInside(0)
+isCloseInside(index) => (close[index] < upperBand[index]) and (close[index] > lowerBand[index])
+
+conditionForLong = (is2C(false) or is3C(false)) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isCloseInside(0)
+conditionForShort = (is2C(true) or is3C(true)) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isCloseInside(0)
 
 
 labelPositionBuy = low - (ta.atr(30) * 0.6)
