@@ -8,6 +8,12 @@ mult = input(2.0)
 dev = mult * ta.stdev(close, length)
 rsi = ta.rsi(close, input(14))
 atr = ta.atr(input(14))
+ma1 = ta.sma(close, input(50))
+ma2 = ta.sma(close, input(100))
+ma3 = ta.sma(close, input(200))
+
+isUptrend = ma1 > ma2 and ma2 > ma3 and ma1[1] > ma2[2] and ma2[1] > ma3[1] and close > ma3
+isDowntrend = ma1 < ma2 and ma2 < ma3 and ma1[1] < ma2[2] and ma2[1] < ma3[1] and close < ma3
 
 [basis, upperBand, lowerBand] = ta.bb(close, length, mult)
 
@@ -115,8 +121,11 @@ isWholeBodyInside(index) => (open[index] < upperBand[index] and close[index] < u
 
 isCloseInside(index) => (close[index] < upperBand[index]) and (close[index] > lowerBand[index])
 
-conditionForLong = (is3C(false)) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isCloseInside(0) and isRSIValid(false)
-conditionForShort = (is3C(true)) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isCloseInside(0) and isRSIValid(true)
+isHittingMACondition = (isHittingMA(20, 1, 0) or isHittingMA(50, 1, 0) or isHittingMA(20, 1, 1) or isHittingMA(50, 1, 1))
+
+conditionForLong = isUptrend and (is3C(false)) and (isHittingBand(false, 0) or isHittingBand(false, 1) or isHittingBand(false, 2)) and isCloseInside(0) and isHittingMACondition
+
+conditionForShort = isDowntrend and (is3C(true)) and (isHittingBand(true, 0) or isHittingBand(true, 1) or isHittingBand(true, 2)) and isCloseInside(0) and isHittingMACondition
 
 
 labelPositionBuy = low - (ta.atr(30) * 0.6)
