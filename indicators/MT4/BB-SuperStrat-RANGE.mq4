@@ -1,5 +1,5 @@
 #property copyright "Created By Ali Sawari"
-#property version   "0.1.0"
+#property version   "1.00"
 #property description "BollingerBands SuperStrat RANGE Indicator"
 
 #include <stdlib.mqh>
@@ -19,8 +19,8 @@
 #property indicator_color2 0x0000FF
 #property indicator_label2 "BB-R Sell"
 
-const string ALERT_MSG_BUY = "Buy "
-const string ALERT_MSG_SELL = "Sell "
+const string ALERT_MSG_BUY = "Buy ";
+const string ALERT_MSG_SELL = "Sell ";
 
 const int BB_SHORT = 8;
 const int BB_LONG1 = 100;
@@ -92,7 +92,7 @@ bool isHittingBB(int candleIndex, int BB_LEN, bool hitUp){
   return isHit;
 }
 
-bool isRSIValid(candleIndex, bool hitUp){
+bool isRSIValid(int candleIndex, bool hitUp){
   double RSI = iRSI(SYMBOL, PERIOD_CURRENT, RSI_LEN, PRICE_CLOSE, candleIndex);
   bool isValid;
   if(hitUp) isValid = MathCeil(RSI) >= RSI_UPPER;
