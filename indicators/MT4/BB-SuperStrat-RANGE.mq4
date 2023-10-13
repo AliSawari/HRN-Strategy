@@ -177,15 +177,15 @@ int OnCalculate(const int rates_total,
     bool is2CBB_Sell = isCurrentBearish && isLowerClose;
 
     // is the price hitting the Major BBs in the last 3 Candles
-    bool isHittingTheBBL1Down = (isHittingBB(i+1, BB_LONG1, false) || isHittingBB(i+2, BB_LONG1, false) || isHittingBB(i+3, BB_LONG1, false));
-    bool isHittingTheBBL1Up = (isHittingBB(i+1, BB_LONG1, true) || isHittingBB(i+2, BB_LONG1, true) || isHittingBB(i+3, BB_LONG1, true));
-    bool isHittingTheBBL2Down = (isHittingBB(i+1, BB_LONG2, false) || isHittingBB(i+2, BB_LONG2, false) || isHittingBB(i+3, BB_LONG2, false));
-    bool isHittingTheBBL2Up = (isHittingBB(i+1, BB_LONG2, true) || isHittingBB(i+2, BB_LONG2, true) || isHittingBB(i+3, BB_LONG2, true));
-    bool isHittingTheBBL3Down = (isHittingBB(i+1, BB_LONG3, false) || isHittingBB(i+2, BB_LONG3, false) || isHittingBB(i+3, BB_LONG3, false));
-    bool isHittingTheBBL3Up = (isHittingBB(i+1, BB_LONG3, true) || isHittingBB(i+2, BB_LONG3, true) || isHittingBB(i+3, BB_LONG3, true));
+    bool isHittingTheBBL1Down = (isHittingBB(i+1, BB_LONG1, false) || isHittingBB(i+2, BB_LONG1, false));
+    bool isHittingTheBBL1Up = (isHittingBB(i+1, BB_LONG1, true) || isHittingBB(i+2, BB_LONG1, true));
+    bool isHittingTheBBL2Down = (isHittingBB(i+1, BB_LONG2, false) || isHittingBB(i+2, BB_LONG2, false));
+    bool isHittingTheBBL2Up = (isHittingBB(i+1, BB_LONG2, true) || isHittingBB(i+2, BB_LONG2, true));
+    bool isHittingTheBBL3Down = (isHittingBB(i+1, BB_LONG3, false) || isHittingBB(i+2, BB_LONG3, false));
+    bool isHittingTheBBL3Up = (isHittingBB(i+1, BB_LONG3, true) || isHittingBB(i+2, BB_LONG3, true));
 
-    bool isTheRSIValidForDown = (isRSIValid(i+1, false) || isRSIValid(i+2, false) || isRSIValid(i+3, false));
-    bool isTheRSIValidForUp = (isRSIValid(i+1, true) || isRSIValid(i+2, true) || isRSIValid(i+3, true));
+    bool isTheRSIValidForDown = (isRSIValid(i+1, false) || isRSIValid(i+2, false) );
+    bool isTheRSIValidForUp = (isRSIValid(i+1, true) || isRSIValid(i+2, true) );
 
     bool isShortBBIncreasing = BB_small_1_Lower > BB_small_2_Lower;
     bool isShortBBDecreasing = BB_small_1_Lower < BB_small_2_Lower;
