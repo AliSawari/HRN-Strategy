@@ -19,8 +19,8 @@
 #property indicator_color2 0x0000FF
 #property indicator_label2 "BB-R Sell"
 
-const string ALERT_MSG_BUY = "Buy ";
-const string ALERT_MSG_SELL = "Sell ";
+const string ALERT_MSG_BUY = "Buy BB-";
+const string ALERT_MSG_SELL = "Sell BB-";
 
 const int BB_SHORT = 8;
 const int BB_LONG1 = 100;
@@ -139,28 +139,32 @@ int OnCalculate(const int rates_total,
     if (i >= MathMin(5000-1, rates_total-1-50)) continue;
 
     // BB Values
-    double BB_small_1[2];
-    double BB_small_2[2];
-    double TheBBLong1[2];
-    double TheBBLong2[2];
-    double TheBBLong3[2];
-    getBands(i+1, BB_SHORT, BB_small_1);
-    getBands(i+2, BB_SHORT, BB_small_1);
-    getBands(i+1, BB_LONG1, TheBBLong1);
-    getBands(i+1, BB_LONG2, TheBBLong2);
-    getBands(i+1, BB_LONG3, TheBBLong3);
+    double BB_small_1_Upper = iBands(SYMBOL, PERIOD_CURRENT, BB_SHORT, BB_DEV, 0, PRICE_CLOSE, MODE_UPPER, i+1);
+    double BB_small_1_Lower = iBands(SYMBOL, PERIOD_CURRENT, BB_SHORT, BB_DEV, 0, PRICE_CLOSE, MODE_LOWER, i+1);
+    double BB_small_2_Upper = iBands(SYMBOL, PERIOD_CURRENT, BB_SHORT, BB_DEV, 0, PRICE_CLOSE, MODE_UPPER, i+2);
+    double BB_small_2_Lower = iBands(SYMBOL, PERIOD_CURRENT, BB_SHORT, BB_DEV, 0, PRICE_CLOSE, MODE_LOWER, i+2);
+
+    double BB_Long1_Upper = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG1, BB_DEV, 0, PRICE_CLOSE, MODE_UPPER, i+1);
+    double BB_Long1_Lower = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG1, BB_DEV, 0, PRICE_CLOSE, MODE_LOWER, i+1);
+
+    double BB_Long2_Upper = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG2, BB_DEV, 0, PRICE_CLOSE, MODE_UPPER, i+1);
+    double BB_Long2_Lower = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG2, BB_DEV, 0, PRICE_CLOSE, MODE_LOWER, i+1);
+
+    double BB_Long3_Upper = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG3, BB_DEV, 0, PRICE_CLOSE, MODE_UPPER, i+1);
+    double BB_Long3_Lower = iBands(SYMBOL, PERIOD_CURRENT, BB_LONG3, BB_DEV, 0, PRICE_CLOSE, MODE_LOWER, i+1);
+
 
     // Candle Values
-    float body1 = MathAbs(Close[i+1] - Open[i+1]);
-    float body2 = MathAbs(Close[i+2] - Open[i+2]);
-    float body1Top = MathMax(Open[i+1], Close[i+1]);
-    float body2Top = MathMax(Open[i+2], Close[i+2]);
-    float body1Bottom = MathMin(Open[i+1], Close[i+1]);
-    float body2Bottom = MathMin(Open[i+2], Close[i+2]);
-    float upperShadow1 = High[i+1] - body1Top;
-    float upperShadow2 = High[i+2] - body2Top;
-    float lowerShadow1 = body1Bottom - Low[i+1];
-    float lowerShadow2 = body2Bottom - Low[i+2];
+    double body1 = MathAbs(Close[i+1] - Open[i+1]);
+    double body2 = MathAbs(Close[i+2] - Open[i+2]);
+    double body1Top = MathMax(Open[i+1], Close[i+1]);
+    double body2Top = MathMax(Open[i+2], Close[i+2]);
+    double body1Bottom = MathMin(Open[i+1], Close[i+1]);
+    double body2Bottom = MathMin(Open[i+2], Close[i+2]);
+    double upperShadow1 = High[i+1] - body1Top;
+    double upperShadow2 = High[i+2] - body2Top;
+    double lowerShadow1 = body1Bottom - Low[i+1];
+    double lowerShadow2 = body2Bottom - Low[i+2];
 
     // is 2CBB pattern Buy 
     bool isCurrentBullish = Close[i+1] > Open[i+1];
@@ -183,15 +187,15 @@ int OnCalculate(const int rates_total,
     bool isTheRSIValidForDown = (isRSIValid(i+1, false) || isRSIValid(i+2, false) || isRSIValid(i+3, false));
     bool isTheRSIValidForUp = (isRSIValid(i+1, true) || isRSIValid(i+2, true) || isRSIValid(i+3, true));
 
-    bool isShortBBIncreasing = BB_small_1[1] > BB_small_2[1];
-    bool isShortBBDecreasing = BB_small_1[0] < BB_small_2[0];
+    bool isShortBBIncreasing = BB_small_1_Lower > BB_small_2_Lower;
+    bool isShortBBDecreasing = BB_small_1_Lower < BB_small_2_Lower;
 
-    bool isCloseAboveBB1 = Close[i+1] > TheBBLong1[1];
-    bool isCloseBelowBB1 = Close[i+1] < TheBBLong1[0];
-    bool isCloseAboveBB2 = Close[i+1] > TheBBLong2[1];
-    bool isCloseBelowBB2 = Close[i+1] < TheBBLong2[0];
-    bool isCloseAboveBB3 = Close[i+1] > TheBBLong3[1];
-    bool isCloseBelowBB3 = Close[i+1] < TheBBLong3[0];
+    bool isCloseAboveBB1 = Close[i+1] > BB_Long1_Lower;
+    bool isCloseBelowBB1 = Close[i+1] < BB_Long1_Upper;
+    bool isCloseAboveBB2 = Close[i+1] > BB_Long2_Lower;
+    bool isCloseBelowBB2 = Close[i+1] < BB_Long2_Upper;
+    bool isCloseAboveBB3 = Close[i+1] > BB_Long3_Lower;
+    bool isCloseBelowBB3 = Close[i+1] < BB_Long3_Upper;
 
      // All Indicators Conditions Booleans
     bool isConditionBuyBB1 = isHittingTheBBL1Down && isCloseAboveBB1;
@@ -201,8 +205,8 @@ int OnCalculate(const int rates_total,
     bool isConditionBuyBB3 = isHittingTheBBL3Down && isCloseAboveBB3;
     bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3;
 
-    bool conditionBuy = (isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
-    bool conditionSell = (isConditionSellBB2 || isConditionSellBB3) && isTheRSIValidForUp && isShortBBDecreasing && is2CBB_Sell;
+    bool conditionBuy = (isConditionBuyBB1 || isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
+    bool conditionSell = (isConditionSellBB1 || isConditionSellBB2 || isConditionSellBB3) && isTheRSIValidForUp && isShortBBDecreasing && is2CBB_Sell;
 
     // arrows
     double ATR = iATR(SYMBOL, PERIOD_CURRENT, RSI_LEN, i+1);
@@ -210,14 +214,20 @@ int OnCalculate(const int rates_total,
     double arrowMultUp = (Low[i+1] - (distance * ATR));
     double arrowMultDown = (High[i+1] + (distance * ATR));
 
+    // for alert msg
+    int currentContext;
+    if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
+    else if(isConditionBuyBB2 || isConditionSellBB2) currentContext = BB_LONG2;
+    else if(isConditionBuyBB3 || isConditionSellBB3) currentContext = BB_LONG3;
+
     if(conditionBuy) {
       Buffer1[i+1] = arrowMultUp;
-      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_BUY); time_alert = Time[0];
+      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_BUY + currentContext); time_alert = Time[0];
     } else Buffer1[i] = EMPTY_VALUE;
     
     if(conditionSell){
       Buffer2[i+1] = arrowMultDown;
-      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_SELL); time_alert = Time[0];
+      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_SELL + currentContext); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
 
   }
