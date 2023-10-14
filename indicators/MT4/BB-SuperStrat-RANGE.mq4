@@ -29,8 +29,8 @@ const int BB_LONG3 = 400;
 const int BB_OFFSET = 2;
 const int BB_DEV = 2;
 const int RSI_LEN = 14;
-const int RSI_UPPER = 70;
-const int RSI_LOWER = 30;
+const int RSI_UPPER = 68;
+const int RSI_LOWER = 32;
 const string SYMBOL = Symbol();
 
 // indicator buffers
