@@ -1,0 +1,141 @@
+// Author: @AliSawari 2023ma50[1]ma7[1]
+
+//@version=5
+indicator("BB-Pullback", shorttitle = "BB-PullBack", overlay=true)
+// MA, RSI, MACD, ATR, BB
+
+stDev = input(2, "StDev")
+offset = input(2, "Offset for BB PB Approximation")
+BB_SHORT = input(8, "Short BB")
+BB_LONG1 = input(100, "Long BB1")
+BB_LONG2 = input(200, "Long BB2")
+BB_LONG3 = input(400, "Long BB2")
+RSI_LEN = input(14, "RSI")
+RSI_UP = input(68, "RSI Upper Level")
+RSI_DOWN = input(32, "RSI Upper Level")
+[_, ShortBB_upper, ShortBB_lower] = ta.bb(close, BB_SHORT, stDev)
+[_, LongBB1_upper, LongBB1_lower] = ta.bb(close, BB_LONG1, stDev)
+[_, LongBB2_upper, LongBB2_lower] = ta.bb(close, BB_LONG2, stDev)
+[_, LongBB3_upper, LongBB3_lower] = ta.bb(close, BB_LONG3, stDev)
+RSI = ta.rsi(close, RSI_LEN)
+
+
+isRSIValid(candleIndex, hitUp) =>
+    RSIValidationUp = math.ceil(RSI[candleIndex]) >= RSI_UP
+    RSIValidationDown = math.floor(RSI[candleIndex]) <= RSI_DOWN
+    result = if hitUp
+        RSIValidationUp
+    else
+        RSIValidationDown
+    result
+
+isHittingBB(candleIndex, BB_LEN, hitUp) => 
+    [_, upper, lower] = ta.bb(close, BB_LEN, stDev)
+    [_, upper_of, lower_of] = ta.bb(close, (BB_LEN - offset), stDev)
+    isHit = if hitUp
+        ( high[candleIndex] >= upper and low[candleIndex] <= upper ) or ( high[candleIndex] >= upper_of and low[candleIndex] <= upper_of)
+    else
+        ( high[candleIndex] >= lower and low[candleIndex] <= lower ) or ( high[candleIndex] >= lower_of and low[candleIndex] <= lower_of)
+    isHit
+
+
+
+body1Top = math.max(open, close)
+body2Top = math.max(open[1], close[1])
+body1Bottom = math.min(open, close)
+body2Bottom = math.min(open[1], close[1])
+
+// is 2CBB pattern Buy 
+isCurrentBullish = close > open
+isHigherClose = body1Top > body2Top
+is2CBB_Buy = isCurrentBullish and isHigherClose
+
+// is 2CBB pattern Sell 
+isCurrentBearish = close < open
+isLowerClose = body1Bottom < body2Bottom
+is2CBB_Sell = isCurrentBearish and isLowerClose
+
+isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) )
+isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) ) 
+isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false) )
+isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true) )
+isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false) )
+isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true))
+
+
+isShortBBIncreasing = ShortBB_lower > ShortBB_lower[1]
+isShortBBDecreasing = ShortBB_lower < ShortBB_lower[1]
+
+
+isCloseAboveBB1 = close >= LongBB1_lower
+isCloseBelowBB1 = close <= LongBB1_upper
+isCloseAboveBB2 = close >= LongBB2_lower
+isCloseBelowBB2 = close <= LongBB2_upper
+isCloseAboveBB3 = close >= LongBB3_lower
+isCloseBelowBB3 = close <= LongBB3_upper
+
+
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3
+
+
+isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false) or isRSIValid(2, false) )
+isTheRSIValidForUp = (isRSIValid(0, true) or isRSIValid(1, true) or isRSIValid(2, true) )
+
+
+conditionBuy = (isConditionBuyBB1 or isConditionBuyBB2 or isConditionBuyBB3) and isTheRSIValidForDown and isShortBBIncreasing and is2CBB_Buy
+conditionSell = (isConditionSellBB1 or isConditionSellBB2 or isConditionSellBB3) and isTheRSIValidForUp and isShortBBDecreasing and is2CBB_Sell
+
+
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+labelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorBuy = input(color.blue, "Label Color Buy")
+labelColorSell = input(color.red, "Label Color Sell")
+labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
+labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
+BB_Short_Color = input(color.blue, "BB1 Color")
+BB1_Color = input(color.yellow, "BB1 Color")
+BB2_Color = input(color.green, "BB2 Color")
+BB3_Color = input(color.red, "BB3 Color")
+bgcolor(conditionBuy ? labelColorBuyBG : na, 0)
+bgcolor(conditionBuy ? labelColorBuyBG : na, -1)
+bgcolor(conditionSell ? labelColorSellBG : na, 0)
+bgcolor(conditionSell ? labelColorSellBG : na, -1)
+plot(ShortBB_upper, color = BB_Short_Color)
+plot(ShortBB_lower, color = BB_Short_Color)
+plot(LongBB1_upper, color = BB1_Color)
+plot(LongBB1_lower, color = BB1_Color)
+plot(LongBB2_upper, color = BB2_Color)
+plot(LongBB2_lower, color = BB2_Color)
+plot(LongBB3_upper, color = BB3_Color)
+plot(LongBB3_lower, color = BB3_Color)
+labelTextBuy = input("BB-PB Buy", "Label Text for Buy indicator")
+labelTextSell = input("BB-PB Sell", "Label Text for Sell indicator")
+labelTooltipBuy = input("BB-Pullback Buy", "Label Tooltip Text for Buy indicator")
+labelTooltipSell = input("BB-Pullback Sell", "Label Tooltip Text for Sell indicator")
+
+
+context = if isConditionBuyBB1 or isConditionSellBB1
+    str.tostring(BB_LONG1)
+else if isConditionBuyBB2 or isConditionSellBB2
+    str.tostring(BB_LONG2)
+else if isConditionBuyBB3 or isConditionSellBB3
+    str.tostring(BB_LONG3)
+
+
+// main
+if conditionBuy
+    msg1 = "Buy BB-PullBack" + context
+    alert(msg1, alert.freq_once_per_bar)
+    label.new(bar_index,labelPositionBuy,text = "Buy" + context ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy BB-PullBack" + context )
+else if conditionSell
+    msg2 = "Sell BB-PullBack" + context
+    alert(msg2, alert.freq_once_per_bar)
+    label.new(bar_index,labelPositionSell,text = "Sell" + context ,style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = "Sell BB-PullBack " + context )
+
+
