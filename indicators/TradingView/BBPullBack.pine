@@ -99,9 +99,9 @@ labelColorSell = input(color.red, "Label Color Sell")
 labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
 labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
 BB_Short_Color = input(color.blue, "BB1 Color")
-BB1_Color = input(color.yellow, "BB1 Color")
+BB1_Color = input(color.orange, "BB1 Color")
 BB2_Color = input(color.green, "BB2 Color")
-BB3_Color = input(color.red, "BB3 Color")
+BB3_Color = input(color.red , "BB3 Color")
 bgcolor(conditionBuy ? labelColorBuyBG : na, 0)
 bgcolor(conditionBuy ? labelColorBuyBG : na, -1)
 bgcolor(conditionSell ? labelColorSellBG : na, 0)
@@ -110,10 +110,10 @@ plot(ShortBB_upper, color = BB_Short_Color)
 plot(ShortBB_lower, color = BB_Short_Color)
 plot(LongBB1_upper, color = BB1_Color)
 plot(LongBB1_lower, color = BB1_Color)
-plot(LongBB2_upper, color = BB2_Color)
-plot(LongBB2_lower, color = BB2_Color)
-plot(LongBB3_upper, color = BB3_Color)
-plot(LongBB3_lower, color = BB3_Color)
+plot(LongBB2_upper, color = BB2_Color, linewidth = 2)
+plot(LongBB2_lower, color = BB2_Color, linewidth = 2)
+plot(LongBB3_upper, color = BB3_Color, linewidth = 3)
+plot(LongBB3_lower, color = BB3_Color, linewidth = 3)
 labelTextBuy = input("BB-PB Buy", "Label Text for Buy indicator")
 labelTextSell = input("BB-PB Sell", "Label Text for Sell indicator")
 labelTooltipBuy = input("BB-Pullback Buy", "Label Tooltip Text for Buy indicator")
@@ -130,12 +130,12 @@ else if isConditionBuyBB3 or isConditionSellBB3
 
 // main
 if conditionBuy
-    msg1 = "Buy BB-PullBack" + context
-    alert(msg1, alert.freq_once_per_bar)
     label.new(bar_index,labelPositionBuy,text = "Buy" + context ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy BB-PullBack" + context )
+    msg1 = "Buy BB-PullBack " + context
+    alert(msg1, alert.freq_once_per_bar_close)
 else if conditionSell
-    msg2 = "Sell BB-PullBack" + context
-    alert(msg2, alert.freq_once_per_bar)
     label.new(bar_index,labelPositionSell,text = "Sell" + context ,style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = "Sell BB-PullBack " + context )
+    msg2 = "Sell BB-PullBack " + context
+    alert(msg2, alert.freq_once_per_bar_close)
 
 
