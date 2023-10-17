@@ -5,14 +5,14 @@ indicator("BB-Pullback", shorttitle = "BB-PullBack", overlay=true)
 // MA, RSI, MACD, ATR, BB
 
 stDev = input(2, "StDev")
-offset = input(2, "Offset for BB PB Approximation")
+offset = input(10, "Offset for BB PB Approximation")
 BB_SHORT = input(8, "Short BB")
 BB_LONG1 = input(100, "Long BB1")
 BB_LONG2 = input(200, "Long BB2")
 BB_LONG3 = input(400, "Long BB2")
 RSI_LEN = input(14, "RSI")
-RSI_UP = input(68, "RSI Upper Level")
-RSI_DOWN = input(32, "RSI Upper Level")
+RSI_UP = input(69, "RSI Upper Level")
+RSI_DOWN = input(31, "RSI Upper Level")
 isBBInRangeCalculation = input(false, "isBBInRangeCalculation")
 shortRangeLen = input(10, "Short BB Range for Calculation")
 longRangeLen = input(100, "Long BB Range for Calculation")
@@ -80,12 +80,12 @@ isCurrentBearish = close < open
 isLowerClose = body1Bottom < body2Bottom
 is2CBB_Sell = isCurrentBearish and isLowerClose
 
-isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false) )
-isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) ) 
-isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false)  )
-isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true)  )
-isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false)  )
-isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) )
+isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) )
+isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) ) 
+isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false)  )
+isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true)  )
+isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false)  )
+isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true) )
 
 
 isShortBBIncreasing = ShortBB_lower > ShortBB_lower[1]
@@ -100,12 +100,12 @@ isCloseAboveBB3 = close >= LongBB3_lower
 isCloseBelowBB3 = close <= LongBB3_upper
 
 
-isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1)
-isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1)
-isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2)
-isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2 and isBBInRange(BB_LONG2)
-isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3)
-isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2 
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3
 
 
 isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false) or isRSIValid(2, false) )
