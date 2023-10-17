@@ -1,0 +1,106 @@
+// Author: @AliSawari 16.10.2023
+
+//@version=5
+indicator("BB-Breakout", shorttitle = "BB-Breakout", overlay=true)
+
+// MA, RSI, MACD, ATR, BB
+
+MA1_LEN = input(8, "MA1")
+MA2_LEN = input(20, "MA2")
+MA3_LEN = input(50, "MA3")
+RSI_UP = input(69, "RSI Upper Level")
+RSI_DOWN = input(31, "RSI Upper Level")
+stDev = input(2, "StDev")
+RSI_LEN = input(14, "RSI")
+BreakoutBB_LEN = input(50, "Breakout BB")
+
+MA1 = ta.sma(close, MA1_LEN)
+MA2 = ta.sma(close, MA2_LEN)
+MA3 = ta.sma(close, MA3_LEN)
+RSI = ta.rsi(close, RSI_LEN)
+[_, BreakOutBB_Upper, BreakOutBB_Lower] = ta.bb(close, BreakoutBB_LEN, stDev)
+
+
+
+isRSIValid(candleIndex, hitUp) =>
+    RSIValidationUp = math.ceil(RSI[candleIndex]) >= RSI_UP
+    RSIValidationDown = math.floor(RSI[candleIndex]) <= RSI_DOWN
+    result = if hitUp
+        RSIValidationUp
+    else
+        RSIValidationDown
+    result
+
+
+body1 = math.abs(open - close)
+body2 = math.abs(open[1] - close[1])
+body1Top = math.max(open, close)
+body2Top = math.max(open[1], close[1])
+body1Bottom = math.min(open, close)
+body2Bottom = math.min(open[1], close[1])
+
+// is 2CBB pattern Buy 
+isCurrentBullish = close > open
+isHigherClose = body1Top > body2Top
+isBiggerBody = body1 > body2
+is2CBB_Buy = isCurrentBullish and isHigherClose 
+
+// is 2CBB pattern Sell 
+isCurrentBearish = close < open
+isLowerClose = body1Bottom < body2Bottom
+is2CBB_Sell = isCurrentBearish and isLowerClose 
+
+isCloseAboveBB = close >= BreakOutBB_Upper
+isCloseBelowBB = close <= BreakOutBB_Lower
+
+isUptrend = (MA1 > MA2) and (MA2 > MA3) and (MA1[1] > MA2[1]) and (MA2[1] > MA3[1])
+isDowntrend = (MA1 < MA2) and (MA2 < MA3) and (MA1[1] < MA2[1]) and (MA2[1] < MA3[1])
+
+isMAsIncreasing = MA1 > MA1[1] and MA2 > MA2[1] and MA3 > MA3[1]
+isMAsDecreasing = MA1 < MA1[1] and MA2 < MA2[1] and MA3 < MA3[1]
+
+isTheRSIValidForDown = (isRSIValid(0, false) )
+isTheRSIValidForUp = (isRSIValid(0, true) )
+
+conditionBuy = isUptrend and isMAsIncreasing and is2CBB_Buy and isCloseAboveBB and isTheRSIValidForUp
+conditionSell = isDowntrend and isMAsDecreasing and is2CBB_Sell and isCloseBelowBB and isTheRSIValidForDown
+
+
+// styling
+labelPositionBuy = low - (ta.atr(30) * 0.6)
+labelPositionSell = high + (ta.atr(30) * 0.6)
+labelColorBuy = input(color.blue, "Label Color Buy")
+labelColorSell = input(color.red, "Label Color Sell")
+labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
+labelColorSellBG = input(color.new(color.red, 90), "Label Color Sell Background")
+BB_Color = input(color.gray, "Short BB")
+MA1_color = input(color.blue, "MA1 Color")
+MA2_color = input(color.red, "MA2 Color")
+MA3_color = input(color.green, "MA3 Color")
+bgcolor(conditionBuy ? labelColorBuyBG : na, 0)
+bgcolor(conditionBuy ? labelColorBuyBG : na, -1)
+bgcolor(conditionSell ? labelColorSellBG : na, 0)
+bgcolor(conditionSell ? labelColorSellBG : na, -1)
+plot(BreakOutBB_Upper, color = BB_Color)
+plot(BreakOutBB_Lower, color = BB_Color)
+plot(MA1, color = MA1_color)
+plot(MA2, color = MA2_color)
+plot(MA3, color = MA3_color)
+
+labelTextBuy = input("BB-BO Buy", "Label Text for Buy indicator")
+labelTextSell = input("BB-BO Sell", "Label Text for Sell indicator")
+labelTooltipBuy = input("BB-BreakOut Buy", "Label Tooltip Text for Buy indicator")
+labelTooltipSell = input("BB-BreakOut Sell", "Label Tooltip Text for Sell indicator")
+
+
+// main
+if conditionBuy
+    label.new(bar_index,labelPositionBuy,text = "Buy" ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy BB-BreakOut" )
+    msg1 = "Buy BB-BreakOut"
+    alert(msg1, alert.freq_once_per_bar_close)
+else if conditionSell
+    label.new(bar_index,labelPositionSell,text = "Sell" ,style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = "Sell BB-BreakOut" )
+    msg2 = "Sell BB-BreakOut"
+    alert(msg2, alert.freq_once_per_bar_close)
+
+
