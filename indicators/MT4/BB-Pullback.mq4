@@ -1,6 +1,6 @@
 #property copyright "Created By Ali Sawari"
 #property version   "1.00"
-#property description "BollingerBands SuperStrat RANGE Indicator"
+#property description "BollingerBands Pullback in RANGE Indicator"
 
 #include <stdlib.mqh>
 #include <stderror.mqh>
@@ -195,7 +195,7 @@ int OnCalculate(const int rates_total,
 
     // is the Short BB changing in values correctly
     bool isShortBBIncreasing = BB_small_1_Lower > BB_small_2_Lower;
-    bool isShortBBDecreasing = BB_small_1_Lower < BB_small_2_Lower;
+    bool isShortBBDecreasing = BB_small_1_Upper < BB_small_2_Upper;
 
     // is the Close above or Below is correct based on the BB strategy
     bool isCloseAboveBB1 = Close[i+1] > BB_Long1_Lower;
@@ -225,9 +225,9 @@ int OnCalculate(const int rates_total,
 
     // context Log for alert msg
     int currentContext;
-    if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
+    if(isConditionBuyBB3 || isConditionBuyBB3) currentContext = BB_LONG3;
     else if(isConditionBuyBB2 || isConditionSellBB2) currentContext = BB_LONG2;
-    else if(isConditionBuyBB3 || isConditionSellBB3) currentContext = BB_LONG3;
+    else if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
 
     // final IF statement
     if(conditionBuy) {
