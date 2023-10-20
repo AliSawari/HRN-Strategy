@@ -5,7 +5,7 @@ indicator("BB-Pullback", shorttitle = "BB-PullBack", overlay=true)
 // MA, RSI, MACD, ATR, BB
 
 stDev = input(2, "StDev")
-offset = input(10, "Offset for BB PB Approximation")
+offset = input(5, "Offset for BB PB Approximation")
 BB_SHORT = input(8, "Short BB")
 BB_LONG1 = input(100, "Long BB1")
 BB_LONG2 = input(200, "Long BB2")
