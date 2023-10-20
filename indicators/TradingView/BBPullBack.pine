@@ -16,7 +16,7 @@ RSI_DOWN = input(31, "RSI Upper Level")
 isBBInRangeCalculation = input(false, "isBBInRangeCalculation")
 shortRangeLen = input(10, "Short BB Range for Calculation")
 longRangeLen = input(100, "Long BB Range for Calculation")
-ShortToLongBBRangeRatio = input(1.2, "ShortToLongBBRangeRatio")
+ShortToLongBBRangeRatio = input(1.5, "ShortToLongBBRangeRatio")
 [_, ShortBB_upper, ShortBB_lower] = ta.bb(close, BB_SHORT, stDev)
 [_, LongBB1_upper, LongBB1_lower] = ta.bb(close, BB_LONG1, stDev)
 [_, LongBB2_upper, LongBB2_lower] = ta.bb(close, BB_LONG2, stDev)
@@ -63,22 +63,44 @@ isBBInRange(BB_LEN) =>
         true
 
 
+        
 
 
+
+body1 = math.abs(open - close)
+body2 = math.abs(open[1] - close[1])
 body1Top = math.max(open, close)
 body2Top = math.max(open[1], close[1])
 body1Bottom = math.min(open, close)
 body2Bottom = math.min(open[1], close[1])
+upperShadow1 = high - body1Top
+lowerShadow1 = body1Bottom - low
+
+calcTP_SL(hitUp) => 
+    float TP = na
+	float SL = na
+    if hitUp
+        SL := high + (SL_To_Body_Ratio * body1)
+        d = (SL - close)
+        TP := close - d
+    else
+        SL := low - (SL_To_Body_Ratio * body1)
+        d = (close - SL)
+        TP := close + d 
+
+    [TP, SL]
 
 // is 2CBB pattern Buy 
 isCurrentBullish = close > open
 isHigherClose = body1Top > body2Top
-is2CBB_Buy = isCurrentBullish and isHigherClose
+isUpperShadowSmall = body1 > upperShadow1
+is2CBB_Buy = isCurrentBullish and isHigherClose and isUpperShadowSmall
 
 // is 2CBB pattern Sell 
 isCurrentBearish = close < open
 isLowerClose = body1Bottom < body2Bottom
-is2CBB_Sell = isCurrentBearish and isLowerClose
+isLowerShadowSmall = body1 > lowerShadow1
+is2CBB_Sell = isCurrentBearish and isLowerClose and isLowerShadowSmall
 
 isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) )
 isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) ) 
@@ -100,12 +122,12 @@ isCloseAboveBB3 = close >= LongBB3_lower
 isCloseBelowBB3 = close <= LongBB3_upper
 
 
-isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1
-isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1
-isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2
-isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2 
-isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3
-isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1)
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1)
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2)
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2)
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3)
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
 
 
 isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false) or isRSIValid(2, false) )
