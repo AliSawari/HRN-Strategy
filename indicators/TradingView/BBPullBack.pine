@@ -89,7 +89,7 @@ isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3,
 
 
 isShortBBIncreasing = ShortBB_lower > ShortBB_lower[1]
-isShortBBDecreasing = ShortBB_lower < ShortBB_lower[1]
+isShortBBDecreasing = ShortBB_upper < ShortBB_upper[1]
 
 
 isCloseAboveBB1 = close >= LongBB1_lower
