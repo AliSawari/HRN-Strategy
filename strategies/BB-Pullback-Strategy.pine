@@ -107,12 +107,12 @@ isLowerClose = body1Bottom < body2Bottom
 isLowerShadowSmall = body1 > lowerShadow1
 is2CBB_Sell = isCurrentBearish and isLowerClose and isLowerShadowSmall
 
-isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) )
-isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) ) 
-isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false)  )
-isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true)  )
-isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false)  )
-isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true) )
+isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false))
+isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) ) 
+isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false) )
+isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true) )
+isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false) )
+isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) )
 
 
 isShortBBIncreasing = ShortBB_lower > ShortBB_lower[1]
@@ -135,8 +135,8 @@ isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_
 isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
 
 
-isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false) or isRSIValid(2, false) )
-isTheRSIValidForUp = (isRSIValid(0, true) or isRSIValid(1, true) or isRSIValid(2, true) )
+isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false)  )
+isTheRSIValidForUp = (isRSIValid(0, true) or isRSIValid(1, true) )
 
 
 conditionBuy = (isConditionBuyBB1 or isConditionBuyBB2 or isConditionBuyBB3) and isTheRSIValidForDown and isShortBBIncreasing and is2CBB_Buy 

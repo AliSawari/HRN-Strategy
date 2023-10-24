@@ -29,8 +29,8 @@ const int BB_LONG3 = 400;
 const int BB_OFFSET = 2;
 const int BB_DEV = 2;
 const int RSI_LEN = 14;
-const int RSI_UPPER = 68;
-const int RSI_LOWER = 32;
+const int RSI_UPPER = 69;
+const int RSI_LOWER = 31;
 const string SYMBOL = Symbol();
 
 // indicator buffers
@@ -43,13 +43,13 @@ double myPoint; //initialized in OnInit
 // custom made alert function for better messages
 void myAlert(string type, string message) {
   // int handle;
-  const string MSG_LABEL = " | BB-Range";
+  const string MSG_LABEL = "BB-Pullback | ";
   if(type == "print") Print(message);
   else if(type == "error") Print(type + MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | "+message);
   else if(type == "indicator") {
-    Print(type + MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message );
-    Alert(type + MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
-    SendNotification(type + MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
+    Print(MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message );
+    Alert(MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
+    SendNotification(MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
   }
 }
 
@@ -214,8 +214,8 @@ int OnCalculate(const int rates_total,
     bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3;
 
     // final conditions
-    bool conditionBuy = (isConditionBuyBB1 || isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
-    bool conditionSell = (isConditionSellBB1 || isConditionSellBB2 || isConditionSellBB3) && isTheRSIValidForUp && isShortBBDecreasing && is2CBB_Sell;
+    bool conditionBuy = (isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
+    bool conditionSell = (isConditionSellBB2 || isConditionSellBB3) && isTheRSIValidForUp && isShortBBDecreasing && is2CBB_Sell;
 
     // drawing the Arrows
     double ATR = iATR(SYMBOL, PERIOD_CURRENT, RSI_LEN, i+1);
@@ -227,7 +227,7 @@ int OnCalculate(const int rates_total,
     int currentContext;
     if(isConditionBuyBB3 || isConditionBuyBB3) currentContext = BB_LONG3;
     else if(isConditionBuyBB2 || isConditionSellBB2) currentContext = BB_LONG2;
-    else if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
+    // else if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
 
     // final IF statement
     if(conditionBuy) {
@@ -237,7 +237,7 @@ int OnCalculate(const int rates_total,
     
     if(conditionSell){
       Buffer2[i+1] = arrowMultDown;
-      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_SELL + currentContext); time_alert = Time[0];
+      if(i == 0 && Time[0] != time_alert) myAlert("indicator", ALERT_MSG_SELL +  currentContext); time_alert = Time[0];
     } else Buffer2[i] = EMPTY_VALUE;
 
   }
