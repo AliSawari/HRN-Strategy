@@ -224,15 +224,15 @@ int OnCalculate(const int rates_total,
     bool isCloseBelowBB3 = Close[i+1] < BB_Long3_Upper;
 
      // All Conditions Booleans
-    bool isConditionBuyBB1 = isHittingTheBBL1Down && isCloseAboveBB1 && (isNotLatePB(i+2, BB_LONG1, false) && isNotLatePB(i+3, BB_LONG1, false));
-    bool isConditionSellBB1 = isHittingTheBBL1Up && isCloseBelowBB1 && (isNotLatePB(i+2, BB_LONG1, true) && isNotLatePB(i+3, BB_LONG1, true));
-    bool isConditionBuyBB2 = isHittingTheBBL2Down && isCloseAboveBB2 && (isNotLatePB(i+2, BB_LONG2, false) && isNotLatePB(i+3, BB_LONG2, false));
-    bool isConditionSellBB2 = isHittingTheBBL2Up && isCloseBelowBB2 && (isNotLatePB(i+2, BB_LONG2, true) && isNotLatePB(i+3, BB_LONG2, true));
-    bool isConditionBuyBB3 = isHittingTheBBL3Down && isCloseAboveBB3 && (isNotLatePB(i+2, BB_LONG3, false) && isNotLatePB(i+3, BB_LONG3, false));
-    bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3 && (isNotLatePB(i+2, BB_LONG3, true) && isNotLatePB(i+3, BB_LONG3, true));
+    bool isConditionBuyBB1 = isHittingTheBBL1Down && isCloseAboveBB1 && (isNotLatePB(i+2, BB_LONG1, false) || isNotLatePB(i+3, BB_LONG1, false));
+    bool isConditionSellBB1 = isHittingTheBBL1Up && isCloseBelowBB1 && (isNotLatePB(i+2, BB_LONG1, true) || isNotLatePB(i+3, BB_LONG1, true));
+    bool isConditionBuyBB2 = isHittingTheBBL2Down && isCloseAboveBB2 && (isNotLatePB(i+2, BB_LONG2, false) || isNotLatePB(i+3, BB_LONG2, false));
+    bool isConditionSellBB2 = isHittingTheBBL2Up && isCloseBelowBB2 && (isNotLatePB(i+2, BB_LONG2, true) || isNotLatePB(i+3, BB_LONG2, true));
+    bool isConditionBuyBB3 = isHittingTheBBL3Down && isCloseAboveBB3 && (isNotLatePB(i+2, BB_LONG3, false) || isNotLatePB(i+3, BB_LONG3, false));
+    bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3 && (isNotLatePB(i+2, BB_LONG3, true) || isNotLatePB(i+3, BB_LONG3, true));
 
     // final conditions
-    bool conditionBuy = (isConditionBuyBB1 ||isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
+    bool conditionBuy = (isConditionBuyBB1 || isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
     bool conditionSell = (isConditionSellBB1 || isConditionSellBB2 || isConditionSellBB3) && isTheRSIValidForUp && isShortBBDecreasing && is2CBB_Sell;
 
     // drawing the Arrows
@@ -243,9 +243,9 @@ int OnCalculate(const int rates_total,
 
     // context Log for alert msg
     int currentContext;
-    if(isConditionBuyBB3 || isConditionBuyBB3) currentContext = BB_LONG3;
+        if(isConditionBuyBB3 || isConditionSellBB3) currentContext = BB_LONG3;
     else if(isConditionBuyBB2 || isConditionSellBB2) currentContext = BB_LONG2;
-    // else if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
+    else if(isConditionBuyBB1 || isConditionSellBB1) currentContext = BB_LONG1;
 
     // final IF statement
     if(conditionBuy) {

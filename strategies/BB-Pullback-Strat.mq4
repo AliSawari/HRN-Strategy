@@ -20,19 +20,20 @@
 #property indicator_label2 "BB-R Sell"
 
 // Indicator CONST values based on Strategy
-const string ALERT_MSG_BUY = "Buy BB-";
-const string ALERT_MSG_SELL = "Sell BB-";
-const int BB_SHORT = 8;
-const int BB_LONG1 = 100;
-const int BB_LONG2 = 200;
-const int BB_LONG3 = 400;
-const int BB_OFFSET = 2;
-const int BB_DEV = 2;
-const int RSI_LEN = 14;
-const int RSI_UPPER = 69;
-const int RSI_LOWER = 31;
-const string SYMBOL = Symbol();
+extern const string ALERT_MSG_BUY = "Buy BB-";
+extern const string ALERT_MSG_SELL = "Sell BB-";
+extern const string ALERT_MSG_LABEL = "BB-Pullback | ";
+extern const int BB_SHORT = 8;
+extern const int BB_LONG1 = 100;
+extern const int BB_LONG2 = 200;
+extern const int BB_LONG3 = 400;
+extern const int BB_OFFSET = 2;
+extern const int BB_DEV = 2;
+extern const int RSI_LEN = 14;
+extern const int RSI_UPPER = 70;
+extern const int RSI_LOWER = 30;
 extern const float SL_To_Body_Ratio = 0.25;
+const string SYMBOL = Symbol();
 
 // indicator buffers
 double Buffer1[];
@@ -118,6 +119,25 @@ void getBodyAndShadows(int candleIndex, double &results[]){
   ArrayFill(results, 1, 1, upperShadow);
   ArrayFill(results, 2, 1, lowerShadow);
 }
+
+
+bool isNotLatePB(int candleIndex, int BB_LEN, bool hitUp){
+  double OHLC[4];
+  double bands[2];
+  getOHLC(candleIndex, OHLC);
+  getBands(candleIndex, BB_LEN, bands);
+  double Open = OHLC[0];
+  double Close = OHLC[3];
+  double Upper = bands[0];
+  double Lower = bands[1];
+  
+  bool isNotLate;
+  if(hitUp) isNotLate = MathMin(Open, Close) <= Upper;
+  else isNotLate = MathMax(Open, Close) >= Lower;
+
+  return isNotLate;
+}
+
 
 void calcTPandSL(bool hitUp, double& results[]){
   double TP;
@@ -227,12 +247,14 @@ void OnTick() {
     // is 2CBB pattern Buy 
     bool isCurrentBullish = Close[i+1] > Open[i+1];
     bool isHigherClose = body1Top > body2Top;
-    bool is2CBB_Buy = isCurrentBullish && isHigherClose;
+    bool isSmallUpperShadow = upperShadow1 < body1;
+    bool is2CBB_Buy = isCurrentBullish && isHigherClose && isSmallUpperShadow;
 
     // is 2CBB pattern Sell 
     bool isCurrentBearish = Close[i+1] < Open[i+1];
     bool isLowerClose = body1Bottom < body2Bottom;
-    bool is2CBB_Sell = isCurrentBearish && isLowerClose;
+    bool isSmallLowerShadow = lowerShadow1 < body1;
+    bool is2CBB_Sell = isCurrentBearish && isLowerClose && isSmallLowerShadow;
 
     // is the price hitting the Major BBs in the last 2 Candles
     bool isHittingTheBBL1Down = (isHittingBB(i+1, BB_LONG1, false) || isHittingBB(i+2, BB_LONG1, false));
@@ -259,12 +281,12 @@ void OnTick() {
     bool isCloseBelowBB3 = Close[i+1] < BB_Long3_Upper;
 
      // All Conditions Booleans
-    bool isConditionBuyBB1 = isHittingTheBBL1Down && isCloseAboveBB1;
-    bool isConditionSellBB1 = isHittingTheBBL1Up && isCloseBelowBB1;
-    bool isConditionBuyBB2 = isHittingTheBBL2Down && isCloseAboveBB2;
-    bool isConditionSellBB2 = isHittingTheBBL2Up && isCloseBelowBB2;
-    bool isConditionBuyBB3 = isHittingTheBBL3Down && isCloseAboveBB3;
-    bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3;
+    bool isConditionBuyBB1 = isHittingTheBBL1Down && isCloseAboveBB1 && (isNotLatePB(i+2, BB_LONG1, false) && isNotLatePB(i+3, BB_LONG1, false));
+    bool isConditionSellBB1 = isHittingTheBBL1Up && isCloseBelowBB1 && (isNotLatePB(i+2, BB_LONG1, true) && isNotLatePB(i+3, BB_LONG1, true));
+    bool isConditionBuyBB2 = isHittingTheBBL2Down && isCloseAboveBB2 && (isNotLatePB(i+2, BB_LONG2, false) && isNotLatePB(i+3, BB_LONG2, false));
+    bool isConditionSellBB2 = isHittingTheBBL2Up && isCloseBelowBB2 && (isNotLatePB(i+2, BB_LONG2, true) && isNotLatePB(i+3, BB_LONG2, true));
+    bool isConditionBuyBB3 = isHittingTheBBL3Down && isCloseAboveBB3 && (isNotLatePB(i+2, BB_LONG3, false) && isNotLatePB(i+3, BB_LONG3, false));
+    bool isConditionSellBB3 = isHittingTheBBL3Up && isCloseBelowBB3 && (isNotLatePB(i+2, BB_LONG3, true) && isNotLatePB(i+3, BB_LONG3, true));
 
     // final conditions
     bool conditionBuy = (isConditionBuyBB2 || isConditionBuyBB3) && isTheRSIValidForDown && isShortBBIncreasing && is2CBB_Buy;
