@@ -64,74 +64,82 @@ isBBInRange(BB_LEN) =>
         true
 
 
+isNotLatePB(candleIndex, THE_BB, hitUp) => 
+    isNotLate = if hitUp
+        math.min(open[candleIndex], close[candleIndex]) <=  THE_BB[candleIndex]
+    else
+        math.max(open[candleIndex], close[candleIndex]) >=  THE_BB[candleIndex]
+    
+    isNotLate
         
 
 
 
-body1 = math.abs(open - close)
-body2 = math.abs(open[1] - close[1])
-body1Top = math.max(open, close)
-body2Top = math.max(open[1], close[1])
-body1Bottom = math.min(open, close)
-body2Bottom = math.min(open[1], close[1])
-upperShadow1 = high - body1Top
-lowerShadow1 = body1Bottom - low
+body1 = math.abs(open[1] - close[1])
+body2 = math.abs(open[2] - close[2])
+body1Top = math.max(open[1], close[1])
+body2Top = math.max(open[2], close[2])
+body1Bottom = math.min(open[1], close[1])
+body2Bottom = math.min(open[2], close[2])
+upperShadow1 = high[1] - body1Top
+lowerShadow1 = body1Bottom - low[1]
 
 calcTP_SL(hitUp) => 
     float TP = na
 	float SL = na
     if hitUp
-        SL := high + (SL_To_Body_Ratio * body1)
-        d = (SL - close)
-        TP := close - d
+        SL := high[1] + (SL_To_Body_Ratio * body1)
+        d = (SL - close[1])
+        TP := close[1] - d
     else
-        SL := low - (SL_To_Body_Ratio * body1)
-        d = (close - SL)
-        TP := close + d 
+        SL := low[1] - (SL_To_Body_Ratio * body1)
+        d = (close[1] - SL)
+        TP := close[1] + d 
 
     [TP, SL]
 
 // is 2CBB pattern Buy 
-isCurrentBullish = close > open
+isCurrentBullish = close[1] > open[1]
 isHigherClose = body1Top > body2Top
 isUpperShadowSmall = body1 > upperShadow1
 is2CBB_Buy = isCurrentBullish and isHigherClose and isUpperShadowSmall
 
 // is 2CBB pattern Sell 
-isCurrentBearish = close < open
+isCurrentBearish = close[1] < open[1]
 isLowerClose = body1Bottom < body2Bottom
 isLowerShadowSmall = body1 > lowerShadow1
 is2CBB_Sell = isCurrentBearish and isLowerClose and isLowerShadowSmall
 
-isHittingTheBBL1Down = (isHittingBB(0, BB_LONG1, false) or isHittingBB(1, BB_LONG1, false))
-isHittingTheBBL1Up = (isHittingBB(0, BB_LONG1, true) or isHittingBB(1, BB_LONG1, true) ) 
-isHittingTheBBL2Down = (isHittingBB(0, BB_LONG2, false) or isHittingBB(1, BB_LONG2, false) )
-isHittingTheBBL2Up = (isHittingBB(0, BB_LONG2, true) or isHittingBB(1, BB_LONG2, true) )
-isHittingTheBBL3Down = (isHittingBB(0, BB_LONG3, false) or isHittingBB(1, BB_LONG3, false) )
-isHittingTheBBL3Up = (isHittingBB(0, BB_LONG3, true) or isHittingBB(1, BB_LONG3, true) )
+isHittingTheBBL1Down = (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) or isHittingBB(3, BB_LONG1, false) )
+isHittingTheBBL1Up = (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) or isHittingBB(3, BB_LONG1, true) ) 
+isHittingTheBBL2Down = (isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false) or isHittingBB(3, BB_LONG2, false) )
+isHittingTheBBL2Up = (isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true) or isHittingBB(3, BB_LONG2, true) )
+isHittingTheBBL3Down = (isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false) or isHittingBB(3, BB_LONG3, false) )
+isHittingTheBBL3Up = (isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true) or isHittingBB(3, BB_LONG3, true)  )
 
-isShortBBIncreasing = ShortBB_lower > ShortBB_lower[1]
-isShortBBDecreasing = ShortBB_upper < ShortBB_upper[1]
-
-
-isCloseAboveBB1 = close >= LongBB1_lower
-isCloseBelowBB1 = close <= LongBB1_upper
-isCloseAboveBB2 = close >= LongBB2_lower
-isCloseBelowBB2 = close <= LongBB2_upper
-isCloseAboveBB3 = close >= LongBB3_lower
-isCloseBelowBB3 = close <= LongBB3_upper
+isShortBBIncreasing = ShortBB_lower[1] > ShortBB_lower[2] or ShortBB_lower[2] > ShortBB_lower[3]
+isShortBBDecreasing = ShortBB_upper[1] < ShortBB_upper[2] or ShortBB_upper[2] < ShortBB_upper[3]
 
 
-isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1)
-isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1)
-isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2)
-isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2)
-isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3)
-isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
+isCloseAboveBB1 = close[1] >= LongBB1_lower
+isCloseBelowBB1 = close[1] <= LongBB1_upper
+isCloseAboveBB2 = close[1] >= LongBB2_lower
+isCloseBelowBB2 = close[1] <= LongBB2_upper
+isCloseAboveBB3 = close[1] >= LongBB3_lower
+isCloseBelowBB3 = close[1] <= LongBB3_upper
 
 
-isTheRSIValidForDown = (isRSIValid(0, false) or isRSIValid(1, false)  )
-isTheRSIValidForUp = (isRSIValid(0, true) or isRSIValid(1, true) )
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1) and (isNotLatePB(2, LongBB1_lower[2], false) or isNotLatePB(3, LongBB1_lower[2], false))
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1) and (isNotLatePB(2, LongBB1_upper[2], true) or isNotLatePB(3, LongBB1_upper[2], true))
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2) and (isNotLatePB(2, LongBB2_lower[2], false) or isNotLatePB(3, LongBB2_lower[2], false))
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2) and (isNotLatePB(2, LongBB2_upper[2], true) or isNotLatePB(3, LongBB2_upper[2], true))
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3) and (isNotLatePB(2, LongBB3_lower[2], false) or isNotLatePB(3, LongBB3_lower[2], false))
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3) and (isNotLatePB(2, LongBB3_upper[2], true) or isNotLatePB(3, LongBB3_upper[2], true))
+
+
+isTheRSIValidForDown = (isRSIValid(1, false) or isRSIValid(2, false) )
+isTheRSIValidForUp = (isRSIValid(1, true) or isRSIValid(2, true) )
+
 
 
 
@@ -140,8 +148,8 @@ conditionSell = (isConditionSellBB1 or isConditionSellBB2 or isConditionSellBB3)
 
 
 // styling
-labelPositionBuy = low - (ta.atr(30) * 0.6)
-labelPositionSell = high + (ta.atr(30) * 0.6)
+labelPositionBuy = low[1] - (ta.atr(30) * 0.6)
+labelPositionSell = high[1] + (ta.atr(30) * 0.6)
 labelColorBuy = input(color.blue, "Label Color Buy")
 labelColorSell = input(color.red, "Label Color Sell")
 labelColorBuyBG = input(color.new(color.blue, 90), "Label Color Buy Background")
@@ -181,11 +189,11 @@ else if isConditionBuyBB1 or isConditionSellBB1
 
 // main
 if conditionBuy
-    label.new(bar_index,labelPositionBuy,text = "Buy" + context ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy BB-PullBack" + context )
+    label.new(bar_index-1,labelPositionBuy,text = "Buy" + context ,style = label.style_label_up, color = labelColorBuy,textcolor = color.white,tooltip = "Buy BB-PullBack" + context )
     msg1 = "Buy BB-PullBack " + context
     alert(msg1, alert.freq_once_per_bar_close)
 else if conditionSell
-    label.new(bar_index,labelPositionSell,text = "Sell" + context ,style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = "Sell BB-PullBack " + context )
+    label.new(bar_index-1,labelPositionSell,text = "Sell" + context ,style = label.style_label_down,color = labelColorSell,textcolor = color.white,tooltip = "Sell BB-PullBack " + context )
     msg2 = "Sell BB-PullBack " + context
     alert(msg2, alert.freq_once_per_bar_close)
 
