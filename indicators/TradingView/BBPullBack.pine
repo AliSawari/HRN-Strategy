@@ -12,7 +12,7 @@ BB_LONG2 = input(200, "Long BB2")
 BB_LONG3 = input(400, "Long BB2")
 RSI_LEN = input(14, "RSI")
 RSI_UP = input(69, "RSI Upper Level")
-RSI_DOWN = input(31, "RSI Upper Level")
+RSI_DOWN = input(31, "RSI Lower Level")
 isBBInRangeCalculation = input(false, "isBBInRangeCalculation")
 shortRangeLen = input(10, "Short BB Range for Calculation")
 longRangeLen = input(100, "Long BB Range for Calculation")
@@ -23,6 +23,8 @@ ShortToLongBBRangeRatio = input(1.5, "ShortToLongBBRangeRatio")
 [_, LongBB3_upper, LongBB3_lower] = ta.bb(close, BB_LONG3, stDev)
 RSI = ta.rsi(close, RSI_LEN)
 SL_To_Body_Ratio = input(0.25, "SL_To_Body_Ratio")
+calcIn3Candles = input(false, "calcIn3Candles")
+disableBB100 = input(true, "disableBB100")
 
 
 isRSIValid(candleIndex, hitUp) =>
@@ -110,41 +112,43 @@ isLowerClose = body1Bottom < body2Bottom
 isLowerShadowSmall = body1 > lowerShadow1
 is2CBB_Sell = isCurrentBearish and isLowerClose and isLowerShadowSmall
 
-isHittingTheBBL1Down = (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) or isHittingBB(3, BB_LONG1, false) )
-isHittingTheBBL1Up = (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) or isHittingBB(3, BB_LONG1, true) ) 
-isHittingTheBBL2Down = (isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false) or isHittingBB(3, BB_LONG2, false) )
-isHittingTheBBL2Up = (isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true) or isHittingBB(3, BB_LONG2, true) )
-isHittingTheBBL3Down = (isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false) or isHittingBB(3, BB_LONG3, false) )
-isHittingTheBBL3Up = (isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true) or isHittingBB(3, BB_LONG3, true)  )
+isHittingTheBBL1Down = calcIn3Candles ? (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) or isHittingBB(3, BB_LONG1, false) ) : (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false))
+isHittingTheBBL1Up = calcIn3Candles ? (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) or isHittingBB(3, BB_LONG1, true) ) : (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true))
+isHittingTheBBL2Down = calcIn3Candles ? (isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false) or isHittingBB(3, BB_LONG2, false) ) : (isHittingBB(1, BB_LONG2, false) or isHittingBB(2, BB_LONG2, false))
+isHittingTheBBL2Up = calcIn3Candles ? (isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true) or isHittingBB(3, BB_LONG2, true) ) : (isHittingBB(1, BB_LONG2, true) or isHittingBB(2, BB_LONG2, true))
+isHittingTheBBL3Down = calcIn3Candles ? (isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false) or isHittingBB(3, BB_LONG3, false) ) : (isHittingBB(1, BB_LONG3, false) or isHittingBB(2, BB_LONG3, false))
+isHittingTheBBL3Up = calcIn3Candles ? (isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true) or isHittingBB(3, BB_LONG3, true) ) : (isHittingBB(1, BB_LONG3, true) or isHittingBB(2, BB_LONG3, true))
 
-isShortBBIncreasing = ShortBB_lower[1] > ShortBB_lower[2] or ShortBB_lower[2] > ShortBB_lower[3]
-isShortBBDecreasing = ShortBB_upper[1] < ShortBB_upper[2] or ShortBB_upper[2] < ShortBB_upper[3]
-
-
-isCloseAboveBB1 = close[1] >= LongBB1_lower
-isCloseBelowBB1 = close[1] <= LongBB1_upper
-isCloseAboveBB2 = close[1] >= LongBB2_lower
-isCloseBelowBB2 = close[1] <= LongBB2_upper
-isCloseAboveBB3 = close[1] >= LongBB3_lower
-isCloseBelowBB3 = close[1] <= LongBB3_upper
+isShortBBIncreasing = ShortBB_lower[1] > ShortBB_lower[2]
+isShortBBDecreasing = ShortBB_upper[1] < ShortBB_upper[2]
 
 
-isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1) and (isNotLatePB(2, LongBB1_lower[2], false) or isNotLatePB(3, LongBB1_lower[2], false))
-isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1) and (isNotLatePB(2, LongBB1_upper[2], true) or isNotLatePB(3, LongBB1_upper[2], true))
-isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2) and (isNotLatePB(2, LongBB2_lower[2], false) or isNotLatePB(3, LongBB2_lower[2], false))
-isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2) and (isNotLatePB(2, LongBB2_upper[2], true) or isNotLatePB(3, LongBB2_upper[2], true))
-isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3) and (isNotLatePB(2, LongBB3_lower[2], false) or isNotLatePB(3, LongBB3_lower[2], false))
-isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3) and (isNotLatePB(2, LongBB3_upper[2], true) or isNotLatePB(3, LongBB3_upper[2], true))
+isCloseAboveBB1 = close[1] >= LongBB1_lower[1]
+isCloseBelowBB1 = close[1] <= LongBB1_upper[1]
+isCloseAboveBB2 = close[1] >= LongBB2_lower[1]
+isCloseBelowBB2 = close[1] <= LongBB2_upper[1]
+isCloseAboveBB3 = close[1] >= LongBB3_lower[1]
+isCloseBelowBB3 = close[1] <= LongBB3_upper[1]
 
 
-isTheRSIValidForDown = (isRSIValid(1, false) or isRSIValid(2, false) )
-isTheRSIValidForUp = (isRSIValid(1, true) or isRSIValid(2, true) )
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1)
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1)
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2)
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2)
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3)
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
 
 
+isTheRSIValidForDown = calcIn3Candles ? (isRSIValid(1, false) or isRSIValid(2, false) or isRSIValid(3, false)) : (isRSIValid(1, false) or isRSIValid(2, false))  
+isTheRSIValidForUp = calcIn3Candles ? (isRSIValid(1, true) or isRSIValid(2, true) or isRSIValid(3, true)) : (isRSIValid(1, true) or isRSIValid(2, true))
 
 
-conditionBuy = (isConditionBuyBB1 or isConditionBuyBB2 or isConditionBuyBB3) and isTheRSIValidForDown and isShortBBIncreasing and is2CBB_Buy 
-conditionSell = (isConditionSellBB1 or isConditionSellBB2 or isConditionSellBB3) and isTheRSIValidForUp and isShortBBDecreasing and is2CBB_Sell
+BBConditionsBuy = disableBB100 ? (isConditionBuyBB2 or isConditionBuyBB3) : (isConditionBuyBB1 or isConditionBuyBB2 or isConditionBuyBB3)
+BBConditionsSell = disableBB100 ? (isConditionSellBB2 or isConditionSellBB3) : (isConditionSellBB1 or isConditionSellBB2 or isConditionSellBB3)
+
+
+conditionBuy = BBConditionsBuy and isTheRSIValidForDown and isShortBBIncreasing and is2CBB_Buy 
+conditionSell = BBConditionsSell and isTheRSIValidForUp and isShortBBDecreasing and is2CBB_Sell
 
 
 // styling
