@@ -47,9 +47,9 @@ void myAlert(string type, string message) {
   if(type == "print") Print(message);
   else if(type == "error") Print(type + ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
   else if(type == "indicator") {
-    Print(ALERT_MSG_LABEL + SYMBOL + " , " + IntegerToString(Period()) + " | " + message );
-    Alert(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
-    SendNotification(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
+    Print(ALERT_MSG_LABEL + SYMBOL + " , " + IntegerToString(Period()) + " M | " + message );
+    Alert(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | M " + message);
+    SendNotification(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " M | " + message);
   }
 }
 
