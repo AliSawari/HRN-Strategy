@@ -30,8 +30,9 @@ extern const int BB_LONG3 = 400;
 extern const int BB_OFFSET = 2;
 extern const int BB_DEV = 2;
 extern const int RSI_LEN = 14;
-extern const int RSI_UPPER = 70;
-extern const int RSI_LOWER = 30;
+extern const int RSI_UPPER = 69;
+extern const int RSI_LOWER = 31;
+extern const bool IS_NOT_LATE_PB = false;
 const string SYMBOL = Symbol();
 
 // indicator buffers
@@ -106,8 +107,8 @@ bool isNotLatePB(int candleIndex, int BB_LEN, bool hitUp){
   bool isNotLate;
   if(hitUp) isNotLate = MathMin(Open, Close) <= Upper;
   else isNotLate = MathMax(Open, Close) >= Lower;
-
-  return isNotLate;
+  if(IS_NOT_LATE_PB) return isNotLate;
+  else return true;
 }
 
 // checks whether or not the RSI values for a given candlestick are suitable for entering a position
