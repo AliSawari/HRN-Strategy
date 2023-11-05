@@ -1,0 +1,85 @@
+// Author: @AliSawari 2023ma50[1]ma7[1]
+
+//@version=5
+indicator("isBBInRange", shorttitle = "isBBInRange")
+// MA, RSI, MACD, ATR, BB
+
+[_, upper1, lower1] = ta.bb(close, 100, 2)
+[_, upper2, lower2] = ta.bb(close, 200, 2)
+[_, upper3, lower3] = ta.bb(close, 400, 2)
+pointA = input(5)
+pointB = input(1)
+
+FiveM_Mult = input(3)
+FifteenM_Mult = input(5)
+OneH_Mult = input(10)
+FourH_Mult = input(20)
+
+
+// plot(upper, color=color.yellow)
+// plot(lower, color=color.red)
+
+// the reason for the reversed divisor is because in Trading Chart the index is negative in the left side and positive in the left side.
+diff_lower1 = lower1[pointB] - lower1[pointA]
+diff_upper1 = upper1[pointB] - upper1[pointA]
+diff_lower2 = lower2[pointB] - lower2[pointA]
+diff_upper2 = upper2[pointB] - upper2[pointA]
+diff_lower3 = lower3[pointB] - lower3[pointA]
+diff_upper3 = upper3[pointB] - upper3[pointA]
+
+slopeLower1 = ( diff_lower1 ) /  ( pointA - pointB )
+slopeUpper1 = ( diff_upper1 ) /  ( pointA - pointB )
+
+slopeLower2 = ( diff_lower2 ) /  ( pointA - pointB )
+slopeUpper2 = ( diff_upper2 ) /  ( pointA - pointB )
+
+slopeLower3 = ( diff_lower3 ) /  ( pointA - pointB )
+slopeUpper3 = ( diff_upper3 ) /  ( pointA - pointB )
+
+tanjantLower1 = (math.abs(math.tan(slopeLower1)))
+tanjantUpper1 = (math.abs(math.tan(slopeUpper1)))
+
+tanjantLower2 = (math.abs(math.tan(slopeLower2)))
+tanjantUpper2 = (math.abs(math.tan(slopeUpper2)))
+
+tanjantLower3 = (math.abs(math.tan(slopeLower3)))
+tanjantUpper3 = (math.abs(math.tan(slopeUpper3)))
+
+
+
+
+// diff in values
+// plot(diff_lower, color=color.red)
+// plot(diff_upper, color=color.blue)
+
+
+// diff in tangent
+// plot(tanjantLower1, color=color.yellow)
+// plot(tanjantUpper1, color=color.yellow)
+
+plot(tanjantLower2, color=color.green)
+plot(tanjantUpper2, color=color.green)
+
+// plot(tanjantLower3, color=color.red)
+// plot(tanjantUpper3, color=color.red)
+
+
+T = timeframe.period
+
+timeMulti = if T == "D"
+    100
+else if (T == "240")
+    FourH_Mult
+else if (T == "60")
+    OneH_Mult
+else if (T == "15")
+    FifteenM_Mult
+else if (T == "5")
+    FiveM_Mult
+
+
+level1 = (syminfo.mintick  * timeMulti)
+
+// levels
+plot(0, color=color.black)
+plot(level1, color=color.black)

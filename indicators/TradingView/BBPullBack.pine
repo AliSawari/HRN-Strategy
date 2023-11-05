@@ -13,10 +13,6 @@ BB_LONG3 = input(400, "Long BB2")
 RSI_LEN = input(14, "RSI")
 RSI_UP = input(69, "RSI Upper Level")
 RSI_DOWN = input(31, "RSI Lower Level")
-isBBInRangeCalculation = input(false, "isBBInRangeCalculation")
-shortRangeLen = input(10, "Short BB Range for Calculation")
-longRangeLen = input(100, "Long BB Range for Calculation")
-ShortToLongBBRangeRatio = input(1.5, "ShortToLongBBRangeRatio")
 [_, ShortBB_upper, ShortBB_lower] = ta.bb(close, BB_SHORT, stDev)
 [_, LongBB1_upper, LongBB1_lower] = ta.bb(close, BB_LONG1, stDev)
 [_, LongBB2_upper, LongBB2_lower] = ta.bb(close, BB_LONG2, stDev)
@@ -25,6 +21,28 @@ RSI = ta.rsi(close, RSI_LEN)
 SL_To_Body_Ratio = input(0.25, "SL_To_Body_Ratio")
 calcIn3Candles = input(false, "calcIn3Candles")
 disableBB100 = input(true, "disableBB100")
+isBBInRangeCalculation = input(false, "isBBInRangeCalculation")
+pointA = input(5)
+pointB = input(1)
+FiveM_Mult = input(3)
+FifteenM_Mult = input(5)
+OneH_Mult = input(10)
+FourH_Mult = input(20)
+
+T = timeframe.period
+
+timeMulti = if T == "D"
+    100
+else if (T == "240")
+    FourH_Mult
+else if (T == "60")
+    OneH_Mult
+else if (T == "15")
+    FifteenM_Mult
+else if (T == "5")
+    FiveM_Mult
+
+level1 = (syminfo.mintick  * timeMulti)
 
 
 isRSIValid(candleIndex, hitUp) =>
@@ -46,19 +64,16 @@ isHittingBB(candleIndex, BB_LEN, hitUp) =>
     isHit
 
 isBBInRange(BB_LEN) =>
+    // the reason for the reversed divisor is because in Trading Charts the index is negative in the left side and positive in the left side plain.
     [_, upper, lower] = ta.bb(close, BB_LEN, stDev)
-    lowerRangeShort = ta.range(lower, shortRangeLen)
-    lowerRangeLong = ta.range(lower, longRangeLen)
-    lowerDiffRange = math.abs(math.abs(lowerRangeLong) - math.abs(lowerRangeShort))
+    diff_lower = lower[pointB] - lower[pointA]
+    diff_upper = upper[pointB] - upper[pointA]
+    slopeLower = ( diff_lower ) /  ( pointA - pointB )
+    slopeUpper = ( diff_upper ) /  ( pointA - pointB )
+    tanjantLower = (math.abs(math.tan(slopeLower)))
+    tanjantUpper = (math.abs(math.tan(slopeUpper)))
 
-    upperRangeShort = ta.range(upper, shortRangeLen)
-    upperRangeLong = ta.range(upper, longRangeLen)
-    upperDiffRange = math.abs(math.abs(upperRangeLong) - math.abs(upperRangeShort))
-
-    isLowerBBInRange = (lowerRangeLong <= (ShortToLongBBRangeRatio * lowerDiffRange)) and lowerRangeShort <= lowerRangeShort[1]
-    isUpperBBInRange = (upperRangeLong <= (ShortToLongBBRangeRatio * upperDiffRange)) and upperRangeShort <= upperRangeShort[1]
-
-    isInRange = isLowerBBInRange and isUpperBBInRange
+    isInRange = (0 <= tanjantLower and tanjantLower < level1) and (0 <= tanjantUpper and tanjantUpper < level1)
 
     if isBBInRangeCalculation
         isInRange
@@ -104,13 +119,13 @@ calcTP_SL(hitUp) =>
 isCurrentBullish = close[1] > open[1]
 isHigherClose = body1Top > body2Top
 isUpperShadowSmall = body1 > upperShadow1
-is2CBB_Buy = isCurrentBullish and isHigherClose and isUpperShadowSmall
+is2CBB_Buy = isCurrentBullish and isHigherClose
 
 // is 2CBB pattern Sell 
 isCurrentBearish = close[1] < open[1]
 isLowerClose = body1Bottom < body2Bottom
 isLowerShadowSmall = body1 > lowerShadow1
-is2CBB_Sell = isCurrentBearish and isLowerClose and isLowerShadowSmall
+is2CBB_Sell = isCurrentBearish and isLowerClose
 
 isHittingTheBBL1Down = calcIn3Candles ? (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false) or isHittingBB(3, BB_LONG1, false) ) : (isHittingBB(1, BB_LONG1, false) or isHittingBB(2, BB_LONG1, false))
 isHittingTheBBL1Up = calcIn3Candles ? (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true) or isHittingBB(3, BB_LONG1, true) ) : (isHittingBB(1, BB_LONG1, true) or isHittingBB(2, BB_LONG1, true))
@@ -130,13 +145,14 @@ isCloseBelowBB2 = close[1] <= LongBB2_upper[1]
 isCloseAboveBB3 = close[1] >= LongBB3_lower[1]
 isCloseBelowBB3 = close[1] <= LongBB3_upper[1]
 
+isBBReallyInRange = ( isBBInRange(BB_LONG1) and isBBInRange(BB_LONG2) and isBBInRange(BB_LONG3))
 
-isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBInRange(BB_LONG1)
-isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBInRange(BB_LONG1)
-isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBInRange(BB_LONG2)
-isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBInRange(BB_LONG2)
-isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBInRange(BB_LONG3)
-isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBInRange(BB_LONG3)
+isConditionBuyBB1 = isHittingTheBBL1Down and isCloseAboveBB1 and isBBReallyInRange
+isConditionSellBB1 = isHittingTheBBL1Up and isCloseBelowBB1 and isBBReallyInRange
+isConditionBuyBB2 = isHittingTheBBL2Down and isCloseAboveBB2 and isBBReallyInRange
+isConditionSellBB2 = isHittingTheBBL2Up and isCloseBelowBB2  and isBBReallyInRange
+isConditionBuyBB3 = isHittingTheBBL3Down and isCloseAboveBB3 and isBBReallyInRange
+isConditionSellBB3 = isHittingTheBBL3Up and isCloseBelowBB3 and isBBReallyInRange
 
 
 isTheRSIValidForDown = calcIn3Candles ? (isRSIValid(1, false) or isRSIValid(2, false) or isRSIValid(3, false)) : (isRSIValid(1, false) or isRSIValid(2, false))  
