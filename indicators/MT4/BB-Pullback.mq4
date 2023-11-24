@@ -30,8 +30,8 @@ extern const int BB_LONG3 = 400;
 extern const int BB_OFFSET = 2;
 extern const int BB_DEV = 2;
 extern const int RSI_LEN = 14;
-extern const int RSI_UPPER = 69;
-extern const int RSI_LOWER = 31;
+extern const int RSI_UPPER = 70;
+extern const int RSI_LOWER = 30;
 extern const bool IS_NOT_LATE_PB = false;
 const string SYMBOL = Symbol();
 
@@ -48,7 +48,7 @@ void myAlert(string type, string message) {
   else if(type == "error") Print(type + ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " | " + message);
   else if(type == "indicator") {
     Print(ALERT_MSG_LABEL + SYMBOL + " , " + IntegerToString(Period()) + "M | " + message );
-    Alert(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " |M " + message);
+    Alert(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + " M | " + message);
     SendNotification(ALERT_MSG_LABEL + SYMBOL + "," + IntegerToString(Period()) + "M | " + message);
   }
 }
